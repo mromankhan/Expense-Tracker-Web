@@ -4,16 +4,15 @@ import Navbar from "@/components/Navbar";
 import useExpenseStore from "@/store/expensesStore"
 
 const Stats = () => {
-    const {expenses} = useExpenseStore();
-    
-    console.log(expenses);
-    
+  const { expenses } = useExpenseStore();
+  // console.log(expenses); for checking
+
   return (
     <>
-    <div className="mb-32">
-    <ExpenseChart expenses={expenses} />
-    </div>
-    <Navbar />
+      <div className="mb-32">
+        <ExpenseChart expenses={expenses} />
+      </div>
+      <Navbar />
     </>
   )
 }

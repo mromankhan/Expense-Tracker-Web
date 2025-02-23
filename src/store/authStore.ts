@@ -10,19 +10,19 @@ type UseAuthStoreType = {
 };
 
 // Zustand Store
-export const useAuthStore = create<UseAuthStoreType>((set) => ({
+export const useAuthStore = create<UseAuthStoreType>(() => ({
   user: null,                // Initialize with null
   loading: true,             // Initial loading state
 }));
 
 // Initialize and listen to auth state changes
 onAuthStateChanged(auth, (user) => {
-  const authStore = useAuthStore.getState();  // Zustand store state
+  // const authStore = useAuthStore.getState();  // Zustand store state
   if (user) {
-    console.log("User logged in:", user);
+    // console.log("User logged in:", user);  for checking
     useAuthStore.setState({ user, loading: false });
   } else {
-    console.log("No user logged in");
+    // console.log("No user logged in");  for checking
     useAuthStore.setState({ user: null, loading: false });
   }
 });

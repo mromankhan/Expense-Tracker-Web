@@ -3,17 +3,13 @@ import React, { useState } from 'react';
 import { db } from '@/firebase/firebaseConfig';
 import { collection, addDoc } from "firebase/firestore"
 import { useAuthStore } from '@/store/authStore'
-import { useRouter } from 'next/navigation';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-
-
 
 export default function AddExpense() {
 
   const user = useAuthStore((store) => store.user)
-  console.log("current user is:", user);
-  
+  // console.log("current user is:", user);  for checking
 
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState(0);
@@ -24,27 +20,27 @@ export default function AddExpense() {
 
   // Add Expences in firestore
   const userId = user?.uid;
-  console.log(userId);
-  
+  // console.log(userId);  for checking
+
   const addExpns = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     const newExpence = { title, amount, category, note, date };
-    if(!title || !amount){
+    if (!title || !amount) {
       toast.error("Please fill all Fields!");
       return;
-    } else{
+    } else {
       try {
         const docRef = collection(db, "users", userId!, "expenses");
         await addDoc(docRef, newExpence)
-        console.log(`Expence added ${newExpence}`);
+        // console.log(`Expence added ${newExpence}`);  for checking
         toast.success("Expense added successfully!");
         setTitle("");
         setAmount(0);
         setCategory("Food");
         setNote("");
       } catch (e) {
-        console.log("add expense error is:", e);  
+        console.log("add expense error is:", e);
       }
     }
     setLoading(false);
@@ -53,7 +49,7 @@ export default function AddExpense() {
 
   return (
     <>
-      <div className="flex justify-center items-center min-h-screen bg-gray-100 p-5">
+      <div className="flex justify-center items-center min-h-screen bg-gray-100 p-5 mb-20">
         <form onSubmit={addExpns} className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
           <h2 className="text-2xl font-bold mb-6 text-center">Add Expense</h2>
           <div className="mb-4">
@@ -118,7 +114,7 @@ export default function AddExpense() {
               rows={3}
             />
           </div>
-          <button type="submit" className="w-full py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition duration-300" onClick={addExpns} disabled={loading}>{loading ? "Loading" : "Add Expense"}</button>
+          <button type="submit" className="w-full py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition duration-300" onClick={addExpns} disabled={loading}>{loading ? "Loading..." : "Add Expense"}</button>
           <ToastContainer position='top-center' />
         </form>
       </div>

@@ -20,11 +20,11 @@ const Income = () => {
       await updateDoc(docRef, {
         totalIncome: Number(salary)
       })
-      console.log("income updated sucessfull");
+      // console.log("income updated sucessfull");  for checking
       router.push("/expenseTracker")
     } catch (e) {
       console.log("update income error is", e);
-      toast.error("")
+      toast.error("Sorry! Can't update income! Please Try Again")
     }
   }
 
@@ -38,7 +38,12 @@ const Income = () => {
             <input type="number" id="income" onChange={(e) => setIncome(Number(e.target.value))}
               className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2
         focus:ring-blue-500 transition duration-300" required />
-            <button onClick={() => { saveIncome(income, user?.uid!) }}
+            <button onClick={() => {
+              if (user?.uid) { saveIncome(income, user.uid) }
+              else {
+                toast.error("User not found!");
+              }
+            }}
               className="bg-blue-600 text-white px-4 py-3 mt-5 rounded-md hover:bg-blue-700
         transition duration-300">Enter</button>
           </div>

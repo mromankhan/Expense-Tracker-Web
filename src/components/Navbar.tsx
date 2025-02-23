@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { FaHome, FaChartBar, FaFileAlt, FaUserCircle, FaPlus } from "react-icons/fa";
+import { FaHome, FaChartBar, FaPlus } from "react-icons/fa";
 
 export default function Navbar() {
   return (
@@ -10,12 +10,12 @@ export default function Navbar() {
         <FaHome size={24} />
         <span className="text-xs md:text-sm">Home</span>
       </Link>
-      
+
       {/* Add Button (Center) */}
       <Link href={"/addExpense"}>
-      <button className="bg-purple-500 p-4 rounded-full shadow-2xl -mt-10 md:-mt-12 transform transition-all hover:scale-110">
-        <FaPlus size={24} color="white" />
-      </button>
+        <button className="bg-purple-500 p-4 rounded-full shadow-2xl -mt-10 md:-mt-12 transform transition-all hover:scale-110">
+          <FaPlus size={24} color="white" />
+        </button>
       </Link>
 
       {/* Stats Icon */}

@@ -2,13 +2,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { collection, deleteDoc, doc, getDoc, getDocs } from 'firebase/firestore';
-import { db } from '@/firebase/firebaseConfig';
+import { auth, db } from '@/firebase/firebaseConfig';
 import { TransactionType } from "@/types/transactionType";
 import Navbar from './Navbar';
-import  useExpenseStore from '@/store/expensesStore';
+import useExpenseStore from '@/store/expensesStore';
 import { useAuthStore } from '@/store/authStore';
 import { GiWallet } from "react-icons/gi";
 import { RiDeleteBin6Fill } from "react-icons/ri";
+import { signOut } from 'firebase/auth';
 
 
 
@@ -26,12 +27,14 @@ export default function Dashboard() {
 
 
   // delete expense function
-  const deleteExpns = async (userId:string, deleteId: string) => {
+  const deleteExpns = async (userId: string, deleteId: string) => {
     try {
       const deleteRef = doc(db, "users", userId, "expenses", deleteId)
       await deleteDoc(deleteRef)
       fetchExpenses(userUid!)
-      console.log("expense deleted sucessfully")
+      fetchTotalExpensesAmount();
+      getIncome();
+      // console.log("expense deleted sucessfully")  for checking
     } catch (e) {
       console.error("Error deleting expense:", e);
       alert("Failed to delete the expense. Please try again.");
@@ -41,73 +44,87 @@ export default function Dashboard() {
 
   // fetch income from firebase
   const fetchTotalIncome = async (userId: string) => {
-   try {
-     const docRef = doc(db, "users", userId);
-     const snap = await getDoc(docRef)
-     if (snap.exists()) {
-       const data = snap.data();
-       return data.totalIncome || 0;
-     } else {
-       console.log("no such document");
-       return null;
-     }
-   } catch (e) {
-     console.log("Error fetching income:", e);
-     return null;
-   }
- }
- 
-
- const getIncome = async () => {
-  if(userUid && !hasFetchedData.current){
-   const fetchedIncome = await fetchTotalIncome(userUid!);
-   setIncomeAmount(fetchedIncome);
-  }}
-
-
- // fetch total expenses from firebase
- const calculateTotalExpenses = async (userId: string) => {
-   try {
-     const expensesCollRef = collection(db, "users", userId, "expenses");
-     const snap = await getDocs(expensesCollRef);
-     let totalExpenses = 0;
-     snap.forEach((doc) => {
-       const data = doc.data();
-       totalExpenses += data.amount || 0;
-     })
-     return totalExpenses;
-   } catch (e) {
-     console.log("fetch total expense error is:", e);
-     return 0;
-   }
- }
-
-
- const fetchTotalExpensesAmount = async () => {
-   const total = await calculateTotalExpenses(userUid!);
-   setTotalExpenses(total)
- }
-
-
- 
- useEffect(() => {
-  if (userUid) {
-    fetchExpenses(userUid);
-    fetchTotalExpensesAmount();
+    try {
+      const docRef = doc(db, "users", userId);
+      const snap = await getDoc(docRef)
+      if (snap.exists()) {
+        const data = snap.data();
+        return data.totalIncome || 0;
+      } else {
+        // console.log("no such document");  for checking
+        return null;
+      }
+    } catch (e) {
+      console.log("Error fetching income:", e);
+      return null;
+    }
   }
-}, [userUid]);
+
+
+  const getIncome = async () => {
+    if (userUid && !hasFetchedData.current) {
+      const fetchedIncome = await fetchTotalIncome(userUid!);
+      setIncomeAmount(fetchedIncome);
+    }
+  }
+
+
+  // fetch total expenses from firebase
+  const calculateTotalExpenses = async (userId: string) => {
+    try {
+      const expensesCollRef = collection(db, "users", userId, "expenses");
+      const snap = await getDocs(expensesCollRef);
+      let totalExpenses = 0;
+      snap.forEach((doc) => {
+        const data = doc.data();
+        totalExpenses += data.amount || 0;
+      })
+      return totalExpenses;
+    } catch (e) {
+      console.log("fetch total expense error is:", e);
+      return 0;
+    }
+  }
+
+
+  const fetchTotalExpensesAmount = async () => {
+    const total = await calculateTotalExpenses(userUid!);
+    setTotalExpenses(total)
+  }
+
+
+
+  // useEffect(() => {
+  //   if (userUid) {
+  //     fetchExpenses(userUid);
+  //     fetchTotalExpensesAmount();
+  //   }
+  // }, [userUid]);
 
   useEffect(() => {
     if (userUid && !hasFetchedData.current) {
       getIncome();
+      fetchExpenses(userUid);
+      fetchTotalExpensesAmount();
       hasFetchedData.current = true
     }
   }, [userUid]);
 
 
-  const dateFormater = () => {
-    
+  const handleSignout = async () => {
+    try {
+      await signOut(auth);
+      // console.log("Logout Sucessfully");  for checking
+      router.push("/login")
+    } catch (e) {
+      console.error("Logout error is", e);
+    }
   }
+
+
+  // const dateFormater = () => {
+
+  // }
 
   return (
     <>
@@ -133,6 +150,12 @@ export default function Dashboard() {
             >
               Add Expense
             </button>
+            <button
+              onClick={handleSignout}
+              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition duration-300 sm:mr-4"
+            >
+              Logout
+            </button>
 
           </div>
         </div>
@@ -144,7 +167,7 @@ export default function Dashboard() {
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold">Transactions</h3>
             </div>
-           
+
             <ul>
               {loading ? "Loading..." : expenses && expenses.length > 0 ? (
                 expenses.map((expence: TransactionType) => (
@@ -157,7 +180,7 @@ export default function Dashboard() {
                     <div className={`text-lg font-semibold mr-5 ${expence.amount < 0 ? 'text-red-500' : 'text-green-500'}`}>
                       {expence.amount < 0 ? `- ${Math.abs(expence.amount)}` : `+ ${expence.amount}`}
                     </div>
-                    <RiDeleteBin6Fill className='cursor-pointer' onClick={() => deleteExpns(userUid!, expence.id)} height={30} width={30} />
+                    <RiDeleteBin6Fill className='cursor-pointer' onClick={() => deleteExpns(userUid!, expence.id!)} height={30} width={30} />
                   </li>
                 ))
               ) : (
@@ -177,7 +200,7 @@ export default function Dashboard() {
 
 
 
- {/* <ul>
+{/* <ul>
               {expenses.map((expense: TransactionType) => (
                 <li key={expense.id} className="flex items-center justify-between bg-gray-100 p-4 rounded-lg mb-4 shadow-md">
                  <GiWallet />

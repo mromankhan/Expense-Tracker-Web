@@ -1,9 +1,8 @@
 export type TransactionType = {
-    id?: any;
-    title: string;
-    date: string;
-    amount: number;
-    category: string;
-    note?: string;
-  }
-  
+  id?: string;
+  title: string;
+  date: string;
+  amount: number;
+  category: string;
+  note?: string;
+}

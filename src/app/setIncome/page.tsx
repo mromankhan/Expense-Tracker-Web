@@ -4,7 +4,7 @@ import React from 'react'
 const setIncome = () => {
   return (
     <>
-    <Income />
+      <Income />
     </>
   )
 }

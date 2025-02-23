@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '@/firebase/firebaseConfig';
 import { ToastContainer, toast } from 'react-toastify';
@@ -22,6 +22,7 @@ const ForgetPassword = () => {
             }, 5000);
         } catch (e) {
             toast.error("Sorry! Something went Wrong Please Try Again Later!");
+            console.log(e)
         }
     }
 

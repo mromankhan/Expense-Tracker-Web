@@ -1,20 +1,22 @@
 "use client";
 import Link from 'next/link';
 import React, { useState } from 'react';
-type PTypes = {
+
+
+type PropsTypes = {
   signup?: boolean,
   func: (email: string, password: string) => void;
 }
 
-const AuthFoam = ({ signup, func }: PTypes) => {
+const AuthFoam = ({ signup, func }: PropsTypes) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     // Handle form submission logic here
-    console.log('Email:', email);
-    console.log('Password:', password);
+    // console.log('Email:', email); for checking
+    // console.log('Password:', password); for checking
   };
 
   return (
@@ -42,7 +44,7 @@ const AuthFoam = ({ signup, func }: PTypes) => {
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           />
-           <Link href="/resetPassword" className='text-[#2563eb] hover:text-[#2a68ee] dark:text-[#3b82f6] dark:hover:text-[#60a5fa]'><p className='mt-2'>{!signup ? "Forget Password" : "" }</p></Link>
+          <Link href="/resetPassword" className='text-[#2563eb] hover:text-[#2a68ee] dark:text-[#3b82f6] dark:hover:text-[#60a5fa]'><p className='mt-2'>{!signup ? "Forget Password" : ""}</p></Link>
         </div>
         <button type="submit" className="w-full py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition duration-300" onClick={() => { func(email, password) }}>{signup ? "Signin" : "Login"}</button>
         <div className="flex justify-center items-center mt-5">
