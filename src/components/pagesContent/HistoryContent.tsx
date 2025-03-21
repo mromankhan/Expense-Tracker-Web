@@ -64,7 +64,8 @@ const HistoryContent = () => {
       setExpenses(expensesData);
       setTotalAmount(totalExpenses);
     } catch (e) {
-      console.error("Error fetching last month's expenses:", e);
+      void e;
+      // console.error("Error fetching last month's expenses:", e); // for dev
     } finally {
       setLoading(false);
     }

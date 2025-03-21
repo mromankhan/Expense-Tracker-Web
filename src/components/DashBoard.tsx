@@ -178,7 +178,7 @@ export default function Dashboard() {
                   </li>
                 ))
               ) : (
-                <p>You have not any Expense of this Month</p>
+                <p>You have no expenses for this month. Start tracking them now!</p>
               )}
             </ul>
           </div>

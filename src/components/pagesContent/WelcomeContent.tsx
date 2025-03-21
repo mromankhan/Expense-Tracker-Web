@@ -34,8 +34,8 @@ export default function Home() {
           Track your expenses with ease
         </p>
 
-        <button onClick={getStart} className="bg-blue-600 text-white px-2 py-2 rounded-md hover:bg-blue-700 transition duration-300 sm:mr-4">
-          Get Started
+        <button onClick={getStart} className="bg-blue-600 text-white px-3 py-3 rounded-md hover:bg-blue-700 transition duration-300 sm:mr-4">
+        Start Now
         </button>
       </main>
     </div>
