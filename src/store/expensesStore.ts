@@ -1,15 +1,13 @@
 "use client";
 import { db } from "@/firebase/firebaseConfig";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { create } from "zustand";
-
 
 type ExpenseStoreType = {
   expenses: Expense[];
   loading: boolean;
-  fetchExpenses: (userId: string) => void
-}
-
+  fetchExpenses: (userId: string) => () => void;
+};
 
 type Expense = {
   id: string;
@@ -24,36 +22,54 @@ const useExpenseStore = create<ExpenseStoreType>((set) => ({
   expenses: [],
   loading: false,
 
-  fetchExpenses: async (userId: string) => {
+  fetchExpenses: (userId: string) => {
+    if (!userId) return () => {}; // If no user, return empty function
+
     set({ loading: true });
-    try {
-      const currrentDate = new Date();
-      const startOfMonth = new Date(currrentDate.getFullYear(), currrentDate.getMonth(), 1);
-      const endOfMonth = new Date(currrentDate.getFullYear(), currrentDate.getMonth() + 1, 0, 23, 59, 59);
-      const qRef = collection(db, "users", userId, "expenses");
-      const q = query(qRef,
-        where("date", ">=", startOfMonth.toISOString()),
-        where("date", "<=", endOfMonth.toISOString()),
-      );
-      const querySnap = await getDocs(q);
-      const expensesData: Expense[] = querySnap.docs.map((doc) => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          title: data.title || "",          // Ensure title exists
-          amount: data.amount || 0,         // Ensure amount exists
-          category: data.category || "Misc",// Default category
-          note: data.note || "",            // Optional field
-          date: data.date || new Date().toISOString(), // Default to current date
-        };
-      });
-      set({ expenses: expensesData })
-    } catch (e) {
-      console.error("Error fetching expenses:", e);
-    } finally {
-      set({ loading: false });
-    }
-  }
-}))
+
+    const currentDate = new Date();
+    const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0, 23, 59, 59);
+
+    const qRef = collection(db, "users", userId, "expenses");
+    const q = query(
+      qRef,
+      where("date", ">=", startOfMonth.toISOString()),
+      where("date", "<=", endOfMonth.toISOString())
+    );
+
+    // **Real-time listener**
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      if (snapshot.empty) {
+        set({ expenses: [], loading: false });
+        return;
+      }
+
+      const expensesData: Expense[] = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        title: doc.data().title || "",
+        amount: doc.data().amount || 0,
+        category: doc.data().category || "Misc",
+        note: doc.data().note || "",
+        date: doc.data().date || new Date().toISOString(),
+      }));
+
+      set({ expenses: expensesData, loading: false });
+    });
+
+    return unsubscribe; // Now returning the unsubscribe function
+  },
+}));
 
 export default useExpenseStore;
+
+
+
+
+
+
+
+
+
+
+

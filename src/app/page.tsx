@@ -1,9 +1,5 @@
-import Login from "./login/page";
+import WelcomeContent from "@/components/pagesContent/WelcomeContent";
 
 export default function Home() {
-  return (
-    <>
-      <Login />
-    </>
-  );
+  return <WelcomeContent />
 }
