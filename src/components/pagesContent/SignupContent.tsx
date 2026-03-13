@@ -12,15 +12,9 @@ const SignupContent = () => {
   const router = useRouter();
 
   async function saveUserInFirestore(email: string, uid: string) {
-    try {
-      if (!db) throw new Error("Firestore DB not initialized");
-
-      const user = { email, uid, currency: "PKR" };
-      const docRef = doc(db, "users", uid);
-      await setDoc(docRef, user, { merge: true });
-    } catch {
-      // Silently handle Firestore save error
-    }
+    const user = { email, uid, currency: "PKR" };
+    const docRef = doc(db, "users", uid);
+    await setDoc(docRef, user, { merge: true });
   }
 
   const signup = async (email: string, password: string) => {
@@ -31,7 +25,7 @@ const SignupContent = () => {
       await saveUserInFirestore(email, userData.uid);
       router.push("/setIncome");
     } catch {
-      toast.error("Invalid Credentials");
+      toast.error("Signup failed. Please check your details and try again.");
     } finally {
       setLoading(false);
     }

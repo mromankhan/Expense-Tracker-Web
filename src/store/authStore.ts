@@ -19,21 +19,31 @@ export const useAuthStore = create<UseAuthStoreType>((set) => ({
 }));
 
 // Listen to auth state changes and fetch user currency from Firestore
+let unsubscribeUserDoc: (() => void) | null = null;
+
 onAuthStateChanged(auth, (user) => {
   if (user) {
     useAuthStore.setState({ user, loading: false });
 
-    // Listen for user document changes (currency)
+    // Clean up any previous listener before attaching a new one
+    if (unsubscribeUserDoc) unsubscribeUserDoc();
+
     const userDocRef = doc(db, "users", user.uid);
-    onSnapshot(userDocRef, (docSnap) => {
+    unsubscribeUserDoc = onSnapshot(userDocRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
         if (data.currency) {
           useAuthStore.setState({ currency: data.currency });
         }
       }
+    }, () => {
+      // Listener failed (e.g. security rules denied) — keep last known currency
     });
   } else {
+    if (unsubscribeUserDoc) {
+      unsubscribeUserDoc();
+      unsubscribeUserDoc = null;
+    }
     useAuthStore.setState({ user: null, loading: false, currency: "PKR" });
   }
 });

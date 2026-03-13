@@ -1,5 +1,5 @@
 "use client";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { collection, getDocs, limit, orderBy, query, where } from "firebase/firestore";
 import { db } from "@/firebase/firebaseConfig";
 import { useAuthStore } from "@/store/authStore";
 import { useEffect, useState } from "react";
@@ -8,6 +8,7 @@ import { GiWallet } from "react-icons/gi";
 import { Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { formatDate } from "@/utils/formatDate";
+import { toast } from "react-toastify";
 
 const HistoryContent = () => {
   const { user } = useAuthStore();
@@ -40,7 +41,9 @@ const HistoryContent = () => {
       const q = query(
         collection(db, `users/${userId}/expenses`),
         where("date", ">=", firstDayOfLastMonth.toISOString().split("T")[0]),
-        where("date", "<=", lastDayOfLastMonth.toISOString().split("T")[0])
+        where("date", "<=", lastDayOfLastMonth.toISOString().split("T")[0]),
+        orderBy("date", "desc"),
+        limit(100)
       );
 
       const querySnapshot = await getDocs(q);
@@ -62,7 +65,7 @@ const HistoryContent = () => {
       setExpenses(expensesData);
       setTotalAmount(totalExpenses);
     } catch {
-      // Silently handle fetch error
+      toast.error("Failed to load history. Please try again.");
     } finally {
       setLoading(false);
     }

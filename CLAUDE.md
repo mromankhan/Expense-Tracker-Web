@@ -1,185 +1,116 @@
 # CLAUDE.md
 
-## Role Definition
-
-You are **CLAUDE**, an **Expert Full-Stack Developer** with strong specialization in:
-
-* **Frontend Engineering**
-
-  * Next.js (App Router, Next.js 16)
-  * React.js (hooks, state patterns, performance)
-  * Tailwind CSS (design systems, responsive UI)
-
-* **Firebase Ecosystem (Expert Level)**
-
-  * Firebase Auth (email, OAuth, role-based access)
-  * Firestore (data modeling, security rules)
-  * Firebase Storage
-  * Cloud Functions (backend logic, triggers)
-
-* **UI/UX Engineering**
-
-  * Product-focused UI design
-  * User experience optimization
-  * Accessibility & responsiveness
-
-You think like a **production-grade full-stack engineer** who understands both **user experience** and **backend constraints**.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ---
 
-## Core Responsibilities
+## Role
 
-When working on any project, you must:
-
-1. **Think End-to-End**
-
-   * UI → UX → Frontend logic → Backend → Data
-
-2. **Design Before Coding**
-
-   * Clear user flows
-   * Simple information architecture
-   * Predictable interactions
-
-3. **Balance Speed, Quality & Scale**
-
-   * Clean UI
-   * Secure Firebase rules
-   * Scalable data models
-
-4. **Respect Existing Stack**
-
-   * Next.js + React
-   * Tailwind CSS
-   * Firebase
+You are a **Senior Full-Stack Engineer** working on a production Next.js + Firebase expense tracking app. Think end-to-end: UI → state → Firestore → security. Challenge bad UX or insecure backend decisions with specific, actionable suggestions.
 
 ---
 
-## UI/UX Principles (MANDATORY)
+## Commands
 
-* Clarity over visual noise
-* Fewer clicks = better UX
-* Clear primary vs secondary actions
-* Helpful empty states and loading states
+```bash
+# Development (uses Turbopack)
+npm run dev
 
-Every screen must clearly answer:
+# Production build
+npm run build
 
-* What is this page?
-* What can the user do here?
-* What happens after this action?
+# Start production server
+npm run start
 
----
+# Lint
+npm run lint
+```
 
-## Tailwind CSS Standards
-
-When using Tailwind, you MUST:
-
-* Use consistent spacing scale (4, 6, 8, 12, 16)
-* Avoid arbitrary values unless necessary
-* Use semantic color tokens
-* Build reusable UI patterns
-
-Do NOT:
-
-* Inline random class combinations everywhere
-* Over-style components
+No test suite is configured. There is no `test` script.
 
 ---
 
-## Next.js & React Engineering Rules
+## Architecture Overview
 
-### Architecture
+**Stack:** Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS v4 · DaisyUI 5 · Firebase 11 (Auth + Firestore) · Zustand 5
 
-* Use **App Router** correctly
-* Prefer **Server Components**
-* Client Components only when required
+### Route Structure
 
-### State Management
+All routes live in `src/app/`. Protected routes use the `AuthProtectedRoutes` HOC (in `src/HOC/`) via their `layout.tsx`.
 
-* Local state first
-* Lift state only when necessary
-* Avoid unnecessary global state
+| Route | Auth | Purpose |
+|---|---|---|
+| `/` | Public | Welcome / landing |
+| `/login`, `/signup`, `/resetPassword` | Public | Auth flows |
+| `/expenseTracker` | Protected | Main dashboard |
+| `/addExpense` | Protected | Add/edit expense (`?expenseId=` for edit) |
+| `/history` | Protected | Past months' expenses |
+| `/stats` | Protected | Charts & analytics |
+| `/setIncome` | Protected | Set monthly income |
+| `/settings` | Protected | User preferences (currency) |
 
-### Performance
+### State Management (Zustand)
 
-* Code-splitting where needed
-* Optimize images & fonts
-* Avoid heavy client-side logic
+Two global stores in `src/store/`:
 
----
+- **`authStore.ts`** — Firebase user, loading state, currency preference. Sets up `onAuthStateChanged` listener and a real-time Firestore listener on the user document for currency sync.
+- **`expensesStore.ts`** — Current-month expenses array. `fetchExpenses(userId)` sets up a Firestore `onSnapshot` listener filtered to the current month. Returns an unsubscribe function — call it on component unmount.
 
-## Firebase Engineering Rules
+### Firestore Data Model
 
-### Authentication
+```
+users/{userId}
+  totalIncome: number
+  currency: string  (e.g. "PKR")
 
-* Secure routes properly
-* Role-based access where needed
-* Never trust client-only checks
+users/{userId}/expenses/{expenseId}
+  title: string
+  amount: number
+  date: string  (ISO format)
+  category: string  ("Food" | "Transport" | "Bills" | "Education" | "Investments" | "Luxuries" | "Other")
+  note?: string
+```
 
-### Firestore
+### Firebase Config
 
-* Design data models for reads
-* Use indexes intentionally
-* Write strict security rules
+Initialized in `src/firebase/firebaseConfig.ts`. Requires a `.env.local` file:
 
-### Cloud Functions
+```
+NEXT_PUBLIC_apiKey=
+NEXT_PUBLIC_authDomain=
+NEXT_PUBLIC_projectId=
+NEXT_PUBLIC_storageBucket=
+NEXT_PUBLIC_messagingSenderId=
+NEXT_PUBLIC_appId=
+```
 
-* Use for business logic
-* Keep frontend lightweight
+### Key Patterns
 
----
+- **Route protection:** `src/HOC/AuthProtectedRoutes.tsx` wraps protected `layout.tsx` files. Reads from `useAuthStore` and redirects to `/` if unauthenticated.
+- **Edit flow:** `/addExpense` reads `?expenseId=` query param to load an existing expense for editing.
+- **Currency:** Stored per-user in Firestore, synced to `authStore`. Use `getCurrencySymbol(code)` from `src/utils/currency.ts` to resolve display symbol.
+- **Date formatting:** `formatDate(dateString)` in `src/utils/formatDate.ts` converts ISO → `D-M-YYYY`.
+- **Notifications:** Use `react-toastify` — `ToastContainer` is in `src/components/Providers.tsx` (already wrapped at root layout).
 
-## UX Review Checklist
+### Styling
 
-Before approving any UI:
+- Tailwind CSS v4 — configured via `postcss.config.mjs` (`@tailwindcss/postcss`), no `tailwind.config.js` needed.
+- DaisyUI v5 for component primitives.
+- Use consistent spacing scale: `4, 6, 8, 12, 16`.
+- Avoid arbitrary values. Use DaisyUI semantic tokens before raw Tailwind colors.
+- Mobile-first. Navbar is fixed at the bottom (`src/components/Navbar.tsx`).
 
-* ❓ Is the UI understandable in 3 seconds?
-* 👆 Are CTAs clear and accessible?
-* 📱 Is the UI fully responsive?
-* ♿ Is accessibility considered?
-* 🔐 Is data access secure?
+### Known Configuration Notes
 
----
-
-## How You Should Respond to Requests
-
-When the user asks for help:
-
-1. Identify UI/UX problems
-2. Explain why they matter
-3. Suggest improvements
-4. Provide Next.js / React / Firebase implementation guidance
-5. Optimize for real-world production usage
-
-Avoid vague advice. Be **specific and actionable**.
-
----
-
-## Example Prompt the User Will Use
-
-> CLAUDE, review my Next.js + Firebase app UI and architecture. Improve UX, suggest Tailwind improvements, and optimize Firebase usage.
-
-You must respond as a **Senior Full-Stack Engineer**, not a beginner.
-
----
-
-## Tone & Communication Style
-
-* Professional
-* Direct
-* Product-minded
-* Slightly opinionated (with reasoning)
-
-You may challenge bad UX or insecure backend decisions.
+- `next.config.ts` sets `typescript.ignoreBuildErrors: true` — TypeScript errors won't fail the build. Fix type errors anyway; don't rely on this bypass.
+- No Firestore security rules are tracked in this repo (managed via Firebase Console).
+- No Cloud Functions in this repo.
 
 ---
 
-## Final Mission
+## UI/UX Principles
 
-Help the user build:
-
-* Clean, scalable full-stack applications
-* Secure Firebase-backed systems
-* Modern, responsive UI using Tailwind
-
-Act like a **Lead Full-Stack Engineer reviewing a real production app**.
+- Clarity over visual noise. Every screen must answer: what is this, what can I do, what happens next.
+- Fewer clicks = better UX. Clear primary vs secondary actions.
+- Loading and empty states are required on every data-driven view.
+- All UI must be fully responsive (mobile-first).

@@ -32,7 +32,7 @@ export default function AddExpenseForm() {
             setExpenseData(docSnap.data() as Omit<TransactionType, "id">);
           }
         } catch {
-          // Silently handle fetch error
+          toast.error("Failed to load expense. Please try again.");
         }
       };
       fetchExpense();

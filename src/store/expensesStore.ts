@@ -1,6 +1,6 @@
 "use client";
 import { db } from "@/firebase/firebaseConfig";
-import { collection, onSnapshot, query, where } from "firebase/firestore";
+import { collection, onSnapshot, orderBy, query, where } from "firebase/firestore";
 import { create } from "zustand";
 import { TransactionType } from "@/types/transactionType";
 
@@ -20,14 +20,18 @@ const useExpenseStore = create<ExpenseStoreType>((set) => ({
     set({ loading: true });
 
     const currentDate = new Date();
-    const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-    const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0, 23, 59, 59);
+    const year = currentDate.getFullYear();
+    const month = String(currentDate.getMonth() + 1).padStart(2, "0");
+    const startOfMonth = `${year}-${month}-01`;
+    const lastDay = new Date(year, currentDate.getMonth() + 1, 0).getDate();
+    const endOfMonth = `${year}-${month}-${String(lastDay).padStart(2, "0")}`;
 
     const qRef = collection(db, "users", userId, "expenses");
     const q = query(
       qRef,
-      where("date", ">=", startOfMonth.toISOString()),
-      where("date", "<=", endOfMonth.toISOString())
+      where("date", ">=", startOfMonth),
+      where("date", "<=", endOfMonth),
+      orderBy("date", "desc")
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -46,6 +50,8 @@ const useExpenseStore = create<ExpenseStoreType>((set) => ({
       }));
 
       set({ expenses: expensesData, loading: false });
+    }, () => {
+      set({ expenses: [], loading: false });
     });
 
     return unsubscribe;
