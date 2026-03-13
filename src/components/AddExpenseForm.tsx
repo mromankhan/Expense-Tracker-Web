@@ -4,25 +4,17 @@ import { useSearchParams } from "next/navigation";
 import { db } from "@/firebase/firebaseConfig";
 import { doc, getDoc, updateDoc, collection, addDoc } from "firebase/firestore";
 import { useAuthStore } from "@/store/authStore";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "react-toastify";
 import { Loader2 } from "lucide-react";
+import { TransactionType } from "@/types/transactionType";
 
-interface Expense {
-  id?: string;
-  title: string;
-  amount: number;
-  category: string;
-  note: string;
-  date: string;
-}
-
-export default function CreateExpense() {
+export default function AddExpenseForm() {
   const searchParams = useSearchParams();
-  const expenseId = searchParams.get("expenseId"); // Query se ID le rahe hain
+  const expenseId = searchParams.get("expenseId");
   const user = useAuthStore((store) => store.user);
   const userId = user?.uid;
   const [loading, setLoading] = useState(false);
-  const [expenseData, setExpenseData] = useState<Expense>({
+  const [expenseData, setExpenseData] = useState<Omit<TransactionType, "id">>({
     title: "",
     amount: 0,
     category: "Food",
@@ -31,17 +23,16 @@ export default function CreateExpense() {
   });
 
   useEffect(() => {
-    if (expenseId) {
+    if (expenseId && userId) {
       const fetchExpense = async () => {
         try {
-          const docRef = doc(db, "users", userId!, "expenses", expenseId);
+          const docRef = doc(db, "users", userId, "expenses", expenseId);
           const docSnap = await getDoc(docRef);
           if (docSnap.exists()) {
-            setExpenseData(docSnap.data() as Expense);
+            setExpenseData(docSnap.data() as Omit<TransactionType, "id">);
           }
-        } catch (e) {
-          void e;
-          // console.error("Error fetching expense:", e); // for dev
+        } catch {
+          // Silently handle fetch error
         }
       };
       fetchExpense();
@@ -50,36 +41,32 @@ export default function CreateExpense() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
 
     if (!expenseData.title || !expenseData.amount) {
       toast.error("Please fill all fields!");
       return;
     }
 
+    setLoading(true);
+
     try {
       if (expenseId) {
-        // If editing existing expense
         const expenseRef = doc(db, "users", userId!, "expenses", expenseId);
-        await updateDoc(expenseRef, expenseData as Partial<Expense>);
+        await updateDoc(expenseRef, { ...expenseData });
         toast.success("Expense updated successfully!");
       } else {
-        // If adding a new expense
         const docRef = collection(db, "users", userId!, "expenses");
         await addDoc(docRef, expenseData);
         toast.success("Expense added successfully!");
       }
 
       setExpenseData({ title: "", amount: 0, category: "Food", note: "", date: new Date().toISOString().split("T")[0] });
-    } catch (e) {
-      void e;
-      // console.error("Error saving expense:", e); // for dev
+    } catch {
       toast.error("Something went wrong! Please try again.");
     } finally {
       setLoading(false);
     }
   };
-
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-100 p-5">
@@ -151,7 +138,6 @@ export default function CreateExpense() {
         <button type="submit" className="w-full py-2 bg-blue-600 text-white rounded-md">
           {loading ? <div className="flex justify-center items-center"><Loader2 className="animate-spin size-6" /></div> : expenseId ? "Update Expense" : "Add Expense"}
         </button>
-        <ToastContainer position="top-center" />
       </form>
     </div>
   );

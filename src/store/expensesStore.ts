@@ -2,20 +2,12 @@
 import { db } from "@/firebase/firebaseConfig";
 import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { create } from "zustand";
+import { TransactionType } from "@/types/transactionType";
 
 type ExpenseStoreType = {
-  expenses: Expense[];
+  expenses: TransactionType[];
   loading: boolean;
   fetchExpenses: (userId: string) => () => void;
-};
-
-type Expense = {
-  id: string;
-  title: string;
-  amount: number;
-  category: string;
-  note?: string;
-  date: string;
 };
 
 const useExpenseStore = create<ExpenseStoreType>((set) => ({
@@ -23,7 +15,7 @@ const useExpenseStore = create<ExpenseStoreType>((set) => ({
   loading: false,
 
   fetchExpenses: (userId: string) => {
-    if (!userId) return () => {}; // If no user, return empty function
+    if (!userId) return () => {};
 
     set({ loading: true });
 
@@ -38,14 +30,13 @@ const useExpenseStore = create<ExpenseStoreType>((set) => ({
       where("date", "<=", endOfMonth.toISOString())
     );
 
-    // **Real-time listener**
     const unsubscribe = onSnapshot(q, (snapshot) => {
       if (snapshot.empty) {
         set({ expenses: [], loading: false });
         return;
       }
 
-      const expensesData: Expense[] = snapshot.docs.map((doc) => ({
+      const expensesData: TransactionType[] = snapshot.docs.map((doc) => ({
         id: doc.id,
         title: doc.data().title || "",
         amount: doc.data().amount || 0,
@@ -57,19 +48,8 @@ const useExpenseStore = create<ExpenseStoreType>((set) => ({
       set({ expenses: expensesData, loading: false });
     });
 
-    return unsubscribe; // Now returning the unsubscribe function
+    return unsubscribe;
   },
 }));
 
 export default useExpenseStore;
-
-
-
-
-
-
-
-
-
-
-

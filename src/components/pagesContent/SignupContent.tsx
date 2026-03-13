@@ -3,59 +3,41 @@ import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth, db } from "@/firebase/firebaseConfig";
 import { useRouter } from 'next/navigation';
 import { doc, setDoc } from "firebase/firestore";
-import AuthFoam from "@/components/AuthFoam";
+import AuthForm from "@/components/AuthForm";
 import { useState } from "react";
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-
-import React from 'react'
+import { toast } from 'react-toastify';
 
 const SignupContent = () => {
-
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  // save user in firestore function
   async function saveUserInFirestore(email: string, uid: string) {
     try {
       if (!db) throw new Error("Firestore DB not initialized");
 
-      const user = { email, uid };
+      const user = { email, uid, currency: "PKR" };
       const docRef = doc(db, "users", uid);
       await setDoc(docRef, user, { merge: true });
-
-      // console.log("User successfully saved in Firestore"); // for dev
-    }
-    catch (e) {
-      void e;
-      // console.error("Error saving user to Firestore:", e); // for dev
+    } catch {
+      // Silently handle Firestore save error
     }
   }
 
-  // signup function
   const signup = async (email: string, password: string) => {
     setLoading(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const userData = userCredential.user;
       await saveUserInFirestore(email, userData.uid);
-      // console.log("user created sucessfull", userData); //for dev
       router.push("/setIncome");
-    } catch (e) {
-      void e;
-      // console.log("signup error is:", e); //for dev
+    } catch {
       toast.error("Invalid Credentials");
     } finally {
       setLoading(false);
     }
-  }
+  };
 
-  return (
-    <>
-      <ToastContainer position='top-center' />
-      <AuthFoam signup={true} func={signup} loading={loading} />
-    </>
-  );
+  return <AuthForm signup={true} func={signup} loading={loading} />;
 }
 
-export default SignupContent
+export default SignupContent;

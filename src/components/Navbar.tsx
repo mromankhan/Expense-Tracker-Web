@@ -18,10 +18,11 @@ export default function Navbar() {
         <span className="text-xs md:text-sm">Home</span>
       </Link>
 
-      <Link href="/addExpense">
-        <button className="bg-purple-500 p-4 rounded-full shadow-2xl -mt-10 md:-mt-12 transform transition-all hover:scale-110">
-          <FaPlus size={24} color="white" />
-        </button>
+      <Link
+        href="/addExpense"
+        className="bg-purple-500 p-4 rounded-full shadow-2xl -mt-10 md:-mt-12 transform transition-all hover:scale-110 flex items-center justify-center"
+      >
+        <FaPlus size={24} color="white" />
       </Link>
 
       <Link

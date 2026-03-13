@@ -7,9 +7,11 @@ import { TransactionType } from "@/types/transactionType";
 import { GiWallet } from "react-icons/gi";
 import { Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
+import { formatDate } from "@/utils/formatDate";
 
 const HistoryContent = () => {
   const { user } = useAuthStore();
+  const currency = useAuthStore((state) => state.currency);
   const [expenses, setExpenses] = useState<TransactionType[]>([]);
   const [totalAmount, setTotalAmount] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -17,12 +19,10 @@ const HistoryContent = () => {
   const fetchLastMonthExpenses = async (userId: string) => {
     if (!userId) return;
 
-    // firstly check local storage
     const cachedExpenses = localStorage.getItem(`lastMonthExpenses_${userId}`);
     if (cachedExpenses) {
       const { expenses, totalAmount, timestamp } = JSON.parse(cachedExpenses);
 
-      // valid data for 1 day in local storage
       const oneDay = 24 * 60 * 60 * 1000;
       if (Date.now() - timestamp < oneDay) {
         setExpenses(expenses);
@@ -31,7 +31,6 @@ const HistoryContent = () => {
       }
     }
 
-    // if chache is expired then fetch from firebase
     setLoading(true);
     try {
       const today = new Date();
@@ -55,7 +54,6 @@ const HistoryContent = () => {
 
       const totalExpenses = expensesData.reduce((acc, curr) => acc + curr.amount, 0);
 
-      // save data in local storage
       localStorage.setItem(
         `lastMonthExpenses_${userId}`,
         JSON.stringify({ expenses: expensesData, totalAmount: totalExpenses, timestamp: Date.now() })
@@ -63,9 +61,8 @@ const HistoryContent = () => {
 
       setExpenses(expensesData);
       setTotalAmount(totalExpenses);
-    } catch (e) {
-      void e;
-      // console.error("Error fetching last month's expenses:", e); // for dev
+    } catch {
+      // Silently handle fetch error
     } finally {
       setLoading(false);
     }
@@ -82,7 +79,7 @@ const HistoryContent = () => {
       <div className="flex flex-col items-center min-h-screen py-12 bg-gray-100 relative">
         <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-lg">
           <h2 className="text-2xl font-semibold">Previous Month&apos;s Expenses</h2>
-          <p className="text-gray-500 text-md font-bold mt-2">Total expenses: ${totalAmount}</p>
+          <p className="text-gray-500 text-md font-bold mt-2">Total expenses: {totalAmount} {currency}</p>
         </div>
 
         <div className="w-full sm:w-full md:w-3/4 lg:w-1/2 mt-6 lg:mt-0">
@@ -102,10 +99,10 @@ const HistoryContent = () => {
                     <GiWallet />
                     <div className="flex-1 ml-4">
                       <h4 className="text-base font-medium">{expense.title}</h4>
-                      <p className="text-sm text-gray-500">{new Date(expense.date).toLocaleDateString()}</p>
+                      <p className="text-sm text-gray-500">{formatDate(expense.date)}</p>
                     </div>
                     <div className={`text-lg font-semibold mr-5 ${expense.amount < 0 ? "text-red-500" : "text-green-500"}`}>
-                      {expense.amount < 0 ? `- $${Math.abs(expense.amount)}` : `+ $${expense.amount}`}
+                      {expense.amount < 0 ? `- ${Math.abs(expense.amount)}` : `+ ${expense.amount}`} {currency}
                     </div>
                   </li>
                 ))
