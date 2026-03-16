@@ -4,11 +4,12 @@ import { db } from "@/firebase/firebaseConfig";
 import { useAuthStore } from "@/store/authStore";
 import { useEffect, useState } from "react";
 import { TransactionType } from "@/types/transactionType";
-import { GiWallet } from "react-icons/gi";
-import { Loader2 } from "lucide-react";
+import { Loader2, Wallet, History } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { formatDate } from "@/utils/formatDate";
 import { toast } from "react-toastify";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 const HistoryContent = () => {
   const { user } = useAuthStore();
@@ -77,43 +78,93 @@ const HistoryContent = () => {
     }
   }, [user?.uid]);
 
+  const getCategoryColor = (category: string) => {
+    const colors: Record<string, string> = {
+      Food: "bg-orange-100 text-orange-700",
+      Transport: "bg-blue-100 text-blue-700",
+      Bills: "bg-red-100 text-red-700",
+      Education: "bg-green-100 text-green-700",
+      Investments: "bg-purple-100 text-purple-700",
+      Luxuries: "bg-pink-100 text-pink-700",
+      Other: "bg-gray-100 text-gray-700",
+    };
+    return colors[category] ?? "bg-gray-100 text-gray-700";
+  };
+
   return (
     <>
-      <div className="flex flex-col items-center min-h-screen py-12 bg-gray-100 relative">
-        <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-lg">
-          <h2 className="text-2xl font-semibold">Previous Month&apos;s Expenses</h2>
-          <p className="text-gray-500 text-md font-bold mt-2">Total expenses: {totalAmount} {currency}</p>
-        </div>
-
-        <div className="w-full sm:w-full md:w-3/4 lg:w-1/2 mt-6 lg:mt-0">
-          <div className="w-full mx-auto p-4">
-            <div className="flex justify-center items-center mb-4">
-              <h3 className="text-lg font-semibold">Transactions</h3>
+      <div className="min-h-screen bg-gray-50 pb-28">
+        {/* Header */}
+        <div className="bg-white border-b border-gray-100 px-5 pt-8 pb-6">
+          <div className="max-w-2xl mx-auto">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
+                <History size={20} className="text-purple-600" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">Previous Month</h1>
+                <p className="text-sm text-gray-500">Expense history</p>
+              </div>
             </div>
 
-            <ul>
-              {loading ? (
-                <div className="flex justify-center items-center">
-                  <Loader2 className="animate-spin size-16" />
-                </div>
-              ) : expenses.length > 0 ? (
-                expenses.map((expense) => (
-                  <li key={expense.id} className="flex items-center justify-between bg-gray-100 p-4 rounded-lg mb-4 shadow-md">
-                    <GiWallet />
-                    <div className="flex-1 ml-4">
-                      <h4 className="text-base font-medium">{expense.title}</h4>
-                      <p className="text-sm text-gray-500">{formatDate(expense.date)}</p>
-                    </div>
-                    <div className={`text-lg font-semibold mr-5 ${expense.amount < 0 ? "text-red-500" : "text-green-500"}`}>
-                      {expense.amount < 0 ? `- ${Math.abs(expense.amount)}` : `+ ${expense.amount}`} {currency}
-                    </div>
-                  </li>
-                ))
-              ) : (
-                <p className="text-center text-gray-500">No expenses found for last month.</p>
-              )}
-            </ul>
+            <Card className="border border-purple-100 bg-purple-50 shadow-none rounded-xl">
+              <CardContent className="p-4">
+                <p className="text-xs font-medium text-purple-600 mb-1">Total Spent Last Month</p>
+                <p className="text-2xl font-bold text-purple-900">{totalAmount} <span className="text-base font-medium">{currency}</span></p>
+              </CardContent>
+            </Card>
           </div>
+        </div>
+
+        {/* Transaction List */}
+        <div className="max-w-2xl mx-auto px-5 mt-6">
+          <h3 className="text-base font-semibold text-gray-900 mb-4">Transactions</h3>
+
+          {loading ? (
+            <div className="flex justify-center items-center py-16">
+              <Loader2 className="animate-spin size-10 text-purple-600" />
+            </div>
+          ) : expenses.length > 0 ? (
+            <ul className="space-y-3">
+              {expenses.map((expense) => (
+                <li key={expense.id}>
+                  <Card className="border border-gray-100 shadow-sm rounded-xl">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center shrink-0">
+                            <Wallet size={18} className="text-gray-500" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-sm font-semibold text-gray-900 truncate">{expense.title}</h4>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <p className="text-xs text-gray-400">{formatDate(expense.date)}</p>
+                              {expense.category && (
+                                <Badge className={`text-xs px-2 py-0 rounded-full font-medium border-0 ${getCategoryColor(expense.category)}`}>
+                                  {expense.category}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <span className={`text-sm font-bold shrink-0 ml-2 ${expense.amount < 0 ? "text-red-500" : "text-green-600"}`}>
+                          {expense.amount < 0 ? `- ${Math.abs(expense.amount)}` : `+ ${expense.amount}`} {currency}
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mb-4">
+                <History size={28} className="text-gray-400" />
+              </div>
+              <h4 className="text-base font-semibold text-gray-700 mb-1">No history found</h4>
+              <p className="text-sm text-gray-400">No expenses recorded for last month.</p>
+            </div>
+          )}
         </div>
       </div>
       <Navbar />

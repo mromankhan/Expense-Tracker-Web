@@ -4,6 +4,11 @@ import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '@/firebase/firebaseConfig';
 import { toast } from 'react-toastify';
 import { useRouter } from 'next/navigation';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { KeyRound } from 'lucide-react';
 
 const ResetPasswordContent = () => {
   const router = useRouter();
@@ -24,39 +29,49 @@ const ResetPasswordContent = () => {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-100 transition duration-500">
-      <div className="w-full max-w-sm p-8 bg-white shadow-lg rounded-lg">
-        <h2 className="text-2xl font-bold mb-6 text-center text-gray-900">Reset Password</h2>
-        <form onSubmit={handlePasswordReset}>
-          <div className="mb-4">
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-              Email:
-            </label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={email}
-              onChange={(e) => { setEmail(e.target.value) }}
-              required
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-300"
-            />
+    <div className="flex justify-center items-center min-h-screen bg-gray-50 p-5">
+      <Card className="w-full max-w-sm shadow-lg border border-gray-100 rounded-2xl">
+        <CardHeader className="text-center pb-2 pt-8">
+          <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <KeyRound size={22} className="text-purple-600" />
           </div>
-          <button
-            type="submit"
-            className="w-full bg-blue-600 text-white mb-3 px-4 py-2 rounded-md hover:bg-blue-700 transition duration-300"
-          >
-            Send Reset Link
-          </button>
-          <button
-            type="button"
-            className="w-full bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 transition duration-300"
-            onClick={() => { router.push("/login") }}
-          >
-            Cancel
-          </button>
-        </form>
-      </div>
+          <CardTitle className="text-2xl font-bold text-gray-900">Reset Password</CardTitle>
+          <p className="text-sm text-gray-500 mt-1">
+            Enter your email and we&apos;ll send a reset link
+          </p>
+        </CardHeader>
+        <CardContent className="px-8 pb-8 pt-4">
+          <form onSubmit={handlePasswordReset} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-sm font-medium text-gray-700">Email</Label>
+              <Input
+                type="email"
+                id="email"
+                name="email"
+                placeholder="xyz@gmail.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="h-11 border-gray-200 focus:border-purple-400 focus:ring-purple-400 rounded-lg"
+              />
+            </div>
+            <Button
+              type="submit"
+              className="w-full h-11 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-all duration-200"
+            >
+              Send Reset Link
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full h-11 rounded-lg font-medium border-gray-200 text-gray-600 hover:bg-gray-50"
+              onClick={() => router.push("/login")}
+            >
+              Back to Login
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }
