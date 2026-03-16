@@ -1,10 +1,10 @@
-import AddExpenceFoam from '@/components/AddExpenceFoam';
+import AddExpenseForm from '@/components/AddExpenseForm';
 import Navbar from '@/components/Navbar';
 
-export default function addExpence() {
+export default function AddExpense() {
   return (
     <>
-      <AddExpenceFoam />
+      <AddExpenseForm />
       <Navbar />
     </>
   )

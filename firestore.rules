@@ -1,0 +1,38 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+
+      match /expenses/{expenseId} {
+        allow read, delete: if request.auth != null && request.auth.uid == userId;
+
+        allow create: if request.auth != null
+          && request.auth.uid == userId
+          && request.resource.data.keys().hasAll(["title", "amount", "category", "date"])
+          && request.resource.data.title is string
+          && request.resource.data.title.size() > 0
+          && request.resource.data.amount is number
+          && request.resource.data.amount > 0
+          && request.resource.data.category is string
+          && request.resource.data.date is string;
+
+        allow update: if request.auth != null
+          && request.auth.uid == userId
+          && request.resource.data.keys().hasAll(["title", "amount", "category", "date"])
+          && request.resource.data.title is string
+          && request.resource.data.title.size() > 0
+          && request.resource.data.amount is number
+          && request.resource.data.amount > 0
+          && request.resource.data.category is string
+          && request.resource.data.date is string;
+      }
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

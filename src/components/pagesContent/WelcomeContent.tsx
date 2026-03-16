@@ -1,42 +1,46 @@
 "use client";
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
 
 export default function Home() {
-
   const router = useRouter();
   const getStart = () => {
     router.push("/login");
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100">
-      <main className="text-center p-6">
-        <div className="relative w-72 h-44 mx-auto">
-          {/* Replace with your own image path */}
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
+      <main className="text-center px-6 py-12 flex flex-col items-center">
+        <div className="relative w-72 h-44 mx-auto mb-8">
           <Image
             src="/welcome-img.webp"
             alt="Welcome"
-            // layout="fill"
             height={700}
             width={700}
-            // objectFit="contain"
-            className='rounded-xl'
+            className="rounded-2xl shadow-lg object-cover"
             priority
           />
         </div>
 
-        <h1 className="text-4xl font-bold text-gray-800 my-2">
-          Welcome
+        <div className="mb-2 inline-flex items-center gap-2 bg-purple-100 text-purple-700 text-xs font-semibold px-3 py-1 rounded-full">
+          Smart Expense Tracking
+        </div>
+
+        <h1 className="text-4xl font-bold text-gray-900 mt-3 mb-3 tracking-tight">
+          Expense Tracker
         </h1>
 
-        <p className="text-xl text-gray-600 mb-4">
-          Track your expenses with ease
+        <p className="text-lg text-gray-500 mb-8 max-w-xs">
+          Take control of your finances. Track every expense with ease.
         </p>
 
-        <button onClick={getStart} className="bg-blue-600 text-white px-3 py-3 rounded-md hover:bg-blue-700 transition duration-300 sm:mr-4">
-        Start Now
-        </button>
+        <Button
+          onClick={getStart}
+          className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 text-base rounded-xl shadow-md transition-all duration-200 hover:shadow-lg hover:scale-105"
+        >
+          Get Started
+        </Button>
       </main>
     </div>
   );

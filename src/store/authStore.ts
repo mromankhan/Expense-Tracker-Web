@@ -1,73 +1,49 @@
 "use client";
-import { auth } from "@/firebase/firebaseConfig";
+import { auth, db } from "@/firebase/firebaseConfig";
 import { onAuthStateChanged, User } from "firebase/auth";
+import { doc, onSnapshot } from "firebase/firestore";
 import { create } from "zustand";
 
-// UserType ki definition
 type UseAuthStoreType = {
-  user: User | null;          // Firebase user object
-  loading: boolean;           // Auth loading state
+  user: User | null;
+  loading: boolean;
+  currency: string;
+  setCurrency: (currency: string) => void;
 };
 
-// Zustand Store
-export const useAuthStore = create<UseAuthStoreType>(() => ({
-  user: null,                // Initialize with null
-  loading: true,             // Initial loading state
+export const useAuthStore = create<UseAuthStoreType>((set) => ({
+  user: null,
+  loading: true,
+  currency: "PKR",
+  setCurrency: (currency: string) => set({ currency }),
 }));
 
-// Initialize and listen to auth state changes
+// Listen to auth state changes and fetch user currency from Firestore
+let unsubscribeUserDoc: (() => void) | null = null;
+
 onAuthStateChanged(auth, (user) => {
-  // const authStore = useAuthStore.getState();  // Zustand store state
   if (user) {
-    // console.log("User logged in:", user);  for checking
     useAuthStore.setState({ user, loading: false });
+
+    // Clean up any previous listener before attaching a new one
+    if (unsubscribeUserDoc) unsubscribeUserDoc();
+
+    const userDocRef = doc(db, "users", user.uid);
+    unsubscribeUserDoc = onSnapshot(userDocRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data.currency) {
+          useAuthStore.setState({ currency: data.currency });
+        }
+      }
+    }, () => {
+      // Listener failed (e.g. security rules denied) — keep last known currency
+    });
   } else {
-    // console.log("No user logged in");  for checking
-    useAuthStore.setState({ user: null, loading: false });
+    if (unsubscribeUserDoc) {
+      unsubscribeUserDoc();
+      unsubscribeUserDoc = null;
+    }
+    useAuthStore.setState({ user: null, loading: false, currency: "PKR" });
   }
 });
-
-
-
-
-
-
-
-// "use client";
-// import { auth } from "@/firebase/firebaseConfig";
-// import { onAuthStateChanged, User } from "firebase/auth";
-// import { useEffect } from "react";
-// import { create } from "zustand";
-
-// // UserType ki definition
-// type UseAuthStoreType = {
-//   user: User | null;
-//   loading: boolean;
-//   setUser: (user: User | null) => void;
-//   setLoading: (loading: boolean) => void;
-// };
-
-// // Zustand Store (Proper Way)
-// export const useAuthStore = create<UseAuthStoreType>((set) => ({
-//   user: null,
-//   loading: true,
-//   setUser: (user) => set({ user }),
-//   setLoading: (loading) => set({ loading }),
-// }));
-
-// // Auth state listener ko ek React component me wrap karo
-// export function AuthProvider({ children }: { children: React.ReactNode }) {
-//   const setUser = useAuthStore((state) => state.setUser);
-//   const setLoading = useAuthStore((state) => state.setLoading);
-
-//   useEffect(() => {
-//     const unsubscribe = onAuthStateChanged(auth, (user) => {
-//       setUser(user);
-//       setLoading(false);
-//     });
-
-//     return () => unsubscribe(); // Cleanup listener on unmount
-//   }, [setUser, setLoading]);
-
-//   return <>{children}</>;
-// }
