@@ -1,29 +1,34 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { db } from "@/firebase/firebaseConfig";
 import { doc, getDoc, updateDoc, collection, addDoc } from "firebase/firestore";
 import { useAuthStore } from "@/store/authStore";
 import { toast } from "react-toastify";
-import { Loader2 } from "lucide-react";
+import { Loader2, ArrowLeft, Utensils, Car, Receipt, GraduationCap, TrendingUp, Gem, HelpCircle } from "lucide-react";
 import { TransactionType } from "@/types/transactionType";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+
+const CATEGORIES = [
+  { value: "Food", icon: Utensils, color: "text-orange-600 bg-orange-50 border-orange-200" },
+  { value: "Transport", icon: Car, color: "text-blue-600 bg-blue-50 border-blue-200" },
+  { value: "Bills", icon: Receipt, color: "text-red-600 bg-red-50 border-red-200" },
+  { value: "Education", icon: GraduationCap, color: "text-green-600 bg-green-50 border-green-200" },
+  { value: "Investments", icon: TrendingUp, color: "text-purple-600 bg-purple-50 border-purple-200" },
+  { value: "Luxuries", icon: Gem, color: "text-pink-600 bg-pink-50 border-pink-200" },
+  { value: "Other", icon: HelpCircle, color: "text-gray-500 bg-gray-50 border-gray-200" },
+];
 
 export default function AddExpenseForm() {
   const searchParams = useSearchParams();
   const expenseId = searchParams.get("expenseId");
+  const router = useRouter();
   const user = useAuthStore((store) => store.user);
+  const currency = useAuthStore((store) => store.currency);
   const userId = user?.uid;
   const [loading, setLoading] = useState(false);
   const [expenseData, setExpenseData] = useState<Omit<TransactionType, "id">>({
@@ -38,11 +43,8 @@ export default function AddExpenseForm() {
     if (expenseId && userId) {
       const fetchExpense = async () => {
         try {
-          const docRef = doc(db, "users", userId, "expenses", expenseId);
-          const docSnap = await getDoc(docRef);
-          if (docSnap.exists()) {
-            setExpenseData(docSnap.data() as Omit<TransactionType, "id">);
-          }
+          const docSnap = await getDoc(doc(db, "users", userId, "expenses", expenseId));
+          if (docSnap.exists()) setExpenseData(docSnap.data() as Omit<TransactionType, "id">);
         } catch {
           toast.error("Failed to load expense. Please try again.");
         }
@@ -53,25 +55,19 @@ export default function AddExpenseForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!expenseData.title || !expenseData.amount) {
       toast.error("Please fill all fields!");
       return;
     }
-
     setLoading(true);
-
     try {
       if (expenseId) {
-        const expenseRef = doc(db, "users", userId!, "expenses", expenseId);
-        await updateDoc(expenseRef, { ...expenseData });
+        await updateDoc(doc(db, "users", userId!, "expenses", expenseId), { ...expenseData });
         toast.success("Expense updated successfully!");
       } else {
-        const docRef = collection(db, "users", userId!, "expenses");
-        await addDoc(docRef, expenseData);
+        await addDoc(collection(db, "users", userId!, "expenses"), expenseData);
         toast.success("Expense added successfully!");
       }
-
       setExpenseData({ title: "", amount: 0, category: "Food", note: "", date: new Date().toISOString().split("T")[0] });
     } catch {
       toast.error("Something went wrong! Please try again.");
@@ -81,98 +77,146 @@ export default function AddExpenseForm() {
   };
 
   return (
-    <div className="flex justify-center items-start min-h-screen bg-gray-50 p-5 pb-28 pt-8">
-      <Card className="w-full max-w-md shadow-lg border border-gray-100 rounded-2xl">
-        <CardHeader className="text-center pb-2 pt-8">
-          <CardTitle className="text-2xl font-bold text-gray-900">
+    <div className="min-h-screen bg-gradient-to-b from-primary/8 via-background to-background pb-28">
+      {/* Header */}
+      <div className="bg-card border-b border-border px-5 pt-8 pb-5">
+        <div className="max-w-md mx-auto">
+          <button
+            onClick={() => router.back()}
+            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-4 transition-colors"
+          >
+            <ArrowLeft size={16} />
+            Back
+          </button>
+          <h1 className="text-2xl font-bold text-foreground">
             {expenseId ? "Edit Expense" : "Add Expense"}
-          </CardTitle>
-          <p className="text-sm text-gray-500 mt-1">
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
             {expenseId ? "Update your expense details" : "Record a new transaction"}
           </p>
-        </CardHeader>
-        <CardContent className="px-8 pb-8 pt-4">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium text-gray-700">Title</Label>
-              <Input
-                type="text"
-                value={expenseData.title}
-                onChange={(e) => setExpenseData({ ...expenseData, title: e.target.value })}
-                placeholder="e.g. Grocery Shopping"
-                className="h-11 border-gray-200 focus:border-purple-400 focus:ring-purple-400 rounded-lg"
-                required
-              />
-            </div>
+        </div>
+      </div>
 
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium text-gray-700">Amount</Label>
+      <div className="max-w-md mx-auto px-5 pt-6">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+          {/* Title */}
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="title">Title</Label>
+            <Input
+              type="text"
+              id="title"
+              value={expenseData.title}
+              onChange={(e) => setExpenseData({ ...expenseData, title: e.target.value })}
+              placeholder="e.g. Grocery Shopping"
+              className="h-11 rounded-xl"
+              required
+            />
+          </div>
+
+          {/* Amount */}
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="amount">Amount ({currency})</Label>
+            <div className="relative">
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground">
+                {currency}
+              </span>
               <Input
                 type="number"
-                value={expenseData.amount}
+                id="amount"
+                value={expenseData.amount || ""}
                 onChange={(e) => setExpenseData({ ...expenseData, amount: Number(e.target.value) })}
-                placeholder="e.g. 500"
-                className="h-11 border-gray-200 focus:border-purple-400 focus:ring-purple-400 rounded-lg"
+                placeholder="0"
+                className="h-11 rounded-xl pl-12"
                 required
               />
             </div>
+          </div>
 
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium text-gray-700">Category</Label>
-              <Select
-                value={expenseData.category}
-                onValueChange={(value) => { if (value) setExpenseData({ ...expenseData, category: value }); }}
-              >
-                <SelectTrigger className="h-11 border-gray-200 rounded-lg focus:ring-purple-400">
-                  <SelectValue placeholder="Select a category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Food">Food</SelectItem>
-                  <SelectItem value="Transport">Transport</SelectItem>
-                  <SelectItem value="Bills">Bills</SelectItem>
-                  <SelectItem value="Education">Education</SelectItem>
-                  <SelectItem value="Investments">Investments</SelectItem>
-                  <SelectItem value="Luxuries">Luxuries</SelectItem>
-                  <SelectItem value="Other">Other</SelectItem>
-                </SelectContent>
-              </Select>
+          {/* Category - icon grid */}
+          <div className="flex flex-col gap-2">
+            <Label>Category</Label>
+            <div className="grid grid-cols-4 gap-2">
+              {CATEGORIES.map(({ value, icon: Icon, color }) => {
+                const selected = expenseData.category === value;
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setExpenseData({ ...expenseData, category: value })}
+                    className={cn(
+                      "flex flex-col items-center gap-1.5 p-3 rounded-2xl border-2 transition-all duration-150",
+                      selected
+                        ? "border-primary bg-primary/5 shadow-sm"
+                        : "border-border bg-card hover:border-muted-foreground/30"
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "size-8 rounded-xl flex items-center justify-center",
+                        selected ? "bg-primary text-primary-foreground" : color
+                      )}
+                    >
+                      <Icon size={15} />
+                    </div>
+                    <span
+                      className={cn(
+                        "text-[10px] font-medium leading-tight text-center",
+                        selected ? "text-primary" : "text-muted-foreground"
+                      )}
+                    >
+                      {value}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
+          </div>
 
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium text-gray-700">Date</Label>
-              <Input
-                type="date"
-                value={expenseData.date}
-                onChange={(e) => setExpenseData({ ...expenseData, date: e.target.value })}
-                className="h-11 border-gray-200 focus:border-purple-400 focus:ring-purple-400 rounded-lg"
-                required
-              />
-            </div>
+          {/* Date */}
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="date">Date</Label>
+            <Input
+              type="date"
+              id="date"
+              value={expenseData.date}
+              onChange={(e) => setExpenseData({ ...expenseData, date: e.target.value })}
+              className="h-11 rounded-xl"
+              required
+            />
+          </div>
 
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium text-gray-700">Note <span className="text-gray-400 font-normal">(Optional)</span></Label>
-              <Textarea
-                value={expenseData.note}
-                onChange={(e) => setExpenseData({ ...expenseData, note: e.target.value })}
-                placeholder="Add any additional notes..."
-                className="border-gray-200 focus:border-purple-400 focus:ring-purple-400 rounded-lg resize-none"
-                rows={3}
-              />
-            </div>
+          {/* Note */}
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="note">
+              Note{" "}
+              <span className="text-muted-foreground font-normal">(Optional)</span>
+            </Label>
+            <Textarea
+              id="note"
+              value={expenseData.note}
+              onChange={(e) => setExpenseData({ ...expenseData, note: e.target.value })}
+              placeholder="Add any additional notes…"
+              className="rounded-xl resize-none"
+              rows={3}
+            />
+          </div>
 
-            <Button
-              type="submit"
-              disabled={loading}
-              className="w-full h-11 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-all duration-200 mt-2"
-            >
-              {loading
-                ? <Loader2 className="animate-spin size-5 mx-auto" />
-                : expenseId ? "Update Expense" : "Add Expense"
-              }
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+          <Button
+            type="submit"
+            disabled={loading}
+            size="lg"
+            className="w-full rounded-xl font-semibold shadow-md shadow-primary/20 mt-1"
+          >
+            {loading ? (
+              <Loader2 className="animate-spin size-5" />
+            ) : expenseId ? (
+              "Update Expense"
+            ) : (
+              "Add Expense"
+            )}
+          </Button>
+        </form>
+      </div>
     </div>
   );
 }

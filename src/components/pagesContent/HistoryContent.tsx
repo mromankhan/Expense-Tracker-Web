@@ -4,12 +4,52 @@ import { db } from "@/firebase/firebaseConfig";
 import { useAuthStore } from "@/store/authStore";
 import { useEffect, useState } from "react";
 import { TransactionType } from "@/types/transactionType";
-import { Loader2, Wallet, History } from "lucide-react";
+import {
+  Loader2,
+  Utensils,
+  Car,
+  Receipt,
+  GraduationCap,
+  TrendingUp,
+  Gem,
+  HelpCircle,
+  CalendarDays,
+} from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { formatDate } from "@/utils/formatDate";
 import { toast } from "react-toastify";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+
+const CATEGORY_ICONS: Record<string, React.ReactNode> = {
+  Food: <Utensils size={16} />,
+  Transport: <Car size={16} />,
+  Bills: <Receipt size={16} />,
+  Education: <GraduationCap size={16} />,
+  Investments: <TrendingUp size={16} />,
+  Luxuries: <Gem size={16} />,
+  Other: <HelpCircle size={16} />,
+};
+
+const CATEGORY_ICON_BG: Record<string, string> = {
+  Food: "bg-orange-100 text-orange-600",
+  Transport: "bg-blue-100 text-blue-600",
+  Bills: "bg-red-100 text-red-600",
+  Education: "bg-green-100 text-green-600",
+  Investments: "bg-purple-100 text-purple-600",
+  Luxuries: "bg-pink-100 text-pink-600",
+  Other: "bg-gray-100 text-gray-500",
+};
+
+const CATEGORY_COLORS: Record<string, string> = {
+  Food: "bg-orange-100 text-orange-700 border-orange-200",
+  Transport: "bg-blue-100 text-blue-700 border-blue-200",
+  Bills: "bg-red-100 text-red-700 border-red-200",
+  Education: "bg-green-100 text-green-700 border-green-200",
+  Investments: "bg-purple-100 text-purple-700 border-purple-200",
+  Luxuries: "bg-pink-100 text-pink-700 border-pink-200",
+  Other: "bg-gray-100 text-gray-700 border-gray-200",
+};
 
 const HistoryContent = () => {
   const { user } = useAuthStore();
@@ -21,12 +61,10 @@ const HistoryContent = () => {
   const fetchLastMonthExpenses = async (userId: string) => {
     if (!userId) return;
 
-    const cachedExpenses = localStorage.getItem(`lastMonthExpenses_${userId}`);
-    if (cachedExpenses) {
-      const { expenses, totalAmount, timestamp } = JSON.parse(cachedExpenses);
-
-      const oneDay = 24 * 60 * 60 * 1000;
-      if (Date.now() - timestamp < oneDay) {
+    const cached = localStorage.getItem(`lastMonthExpenses_${userId}`);
+    if (cached) {
+      const { expenses, totalAmount, timestamp } = JSON.parse(cached);
+      if (Date.now() - timestamp < 24 * 60 * 60 * 1000) {
         setExpenses(expenses);
         setTotalAmount(totalAmount);
         return;
@@ -36,35 +74,34 @@ const HistoryContent = () => {
     setLoading(true);
     try {
       const today = new Date();
-      const firstDayOfLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-      const lastDayOfLastMonth = new Date(today.getFullYear(), today.getMonth(), 0, 23, 59, 59);
+      const firstDay = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      const lastDay = new Date(today.getFullYear(), today.getMonth(), 0, 23, 59, 59);
 
       const q = query(
         collection(db, `users/${userId}/expenses`),
-        where("date", ">=", firstDayOfLastMonth.toISOString().split("T")[0]),
-        where("date", "<=", lastDayOfLastMonth.toISOString().split("T")[0]),
+        where("date", ">=", firstDay.toISOString().split("T")[0]),
+        where("date", "<=", lastDay.toISOString().split("T")[0]),
         orderBy("date", "desc"),
         limit(100)
       );
 
-      const querySnapshot = await getDocs(q);
-      const expensesData = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        title: doc.data().title || "Unknown",
-        date: doc.data().date || new Date().toISOString(),
-        amount: doc.data().amount || 0,
-        category: doc.data().category || "Food",
+      const snapshot = await getDocs(q);
+      const data = snapshot.docs.map((d) => ({
+        id: d.id,
+        title: d.data().title || "Unknown",
+        date: d.data().date || new Date().toISOString(),
+        amount: d.data().amount || 0,
+        category: d.data().category || "Other",
       }));
 
-      const totalExpenses = expensesData.reduce((acc, curr) => acc + curr.amount, 0);
-
+      const total = data.reduce((acc, curr) => acc + curr.amount, 0);
       localStorage.setItem(
         `lastMonthExpenses_${userId}`,
-        JSON.stringify({ expenses: expensesData, totalAmount: totalExpenses, timestamp: Date.now() })
+        JSON.stringify({ expenses: data, totalAmount: total, timestamp: Date.now() })
       );
 
-      setExpenses(expensesData);
-      setTotalAmount(totalExpenses);
+      setExpenses(data);
+      setTotalAmount(total);
     } catch {
       toast.error("Failed to load history. Please try again.");
     } finally {
@@ -73,96 +110,117 @@ const HistoryContent = () => {
   };
 
   useEffect(() => {
-    if (user?.uid) {
-      fetchLastMonthExpenses(user.uid);
-    }
+    if (user?.uid) fetchLastMonthExpenses(user.uid);
   }, [user?.uid]);
 
-  const getCategoryColor = (category: string) => {
-    const colors: Record<string, string> = {
-      Food: "bg-orange-100 text-orange-700",
-      Transport: "bg-blue-100 text-blue-700",
-      Bills: "bg-red-100 text-red-700",
-      Education: "bg-green-100 text-green-700",
-      Investments: "bg-purple-100 text-purple-700",
-      Luxuries: "bg-pink-100 text-pink-700",
-      Other: "bg-gray-100 text-gray-700",
-    };
-    return colors[category] ?? "bg-gray-100 text-gray-700";
-  };
+  const lastMonth = new Date();
+  lastMonth.setMonth(lastMonth.getMonth() - 1);
+  const monthLabel = lastMonth.toLocaleString("default", { month: "long", year: "numeric" });
 
   return (
     <>
-      <div className="min-h-screen bg-gray-50 pb-28">
-        {/* Header */}
-        <div className="bg-white border-b border-gray-100 px-5 pt-8 pb-6">
+      <div className="min-h-screen bg-background pb-28">
+        {/* Gradient Header */}
+        <div className="bg-gradient-to-br from-primary via-primary/90 to-primary/70 px-5 pt-8 pb-8">
           <div className="max-w-2xl mx-auto">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
-                <History size={20} className="text-purple-600" />
+            <div className="flex items-center gap-3 mb-5">
+              <div className="size-10 bg-white/20 rounded-xl flex items-center justify-center">
+                <CalendarDays size={20} className="text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">Previous Month</h1>
-                <p className="text-sm text-gray-500">Expense history</p>
+                <h1 className="text-xl font-bold text-primary-foreground">History</h1>
+                <p className="text-sm text-primary-foreground/70">{monthLabel}</p>
               </div>
             </div>
 
-            <Card className="border border-purple-100 bg-purple-50 shadow-none rounded-xl">
-              <CardContent className="p-4">
-                <p className="text-xs font-medium text-purple-600 mb-1">Total Spent Last Month</p>
-                <p className="text-2xl font-bold text-purple-900">{totalAmount} <span className="text-base font-medium">{currency}</span></p>
-              </CardContent>
-            </Card>
+            <div className="bg-white/15 rounded-2xl px-4 py-4">
+              <p className="text-xs font-semibold text-primary-foreground/70 uppercase tracking-wide mb-1">
+                Total Spent Last Month
+              </p>
+              <p className="text-3xl font-extrabold text-primary-foreground">
+                {totalAmount}{" "}
+                <span className="text-lg font-semibold text-primary-foreground/80">
+                  {currency}
+                </span>
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* Transaction List */}
+        {/* Transactions */}
         <div className="max-w-2xl mx-auto px-5 mt-6">
-          <h3 className="text-base font-semibold text-gray-900 mb-4">Transactions</h3>
+          <h3 className="text-base font-semibold text-foreground mb-4">Transactions</h3>
 
           {loading ? (
             <div className="flex justify-center items-center py-16">
-              <Loader2 className="animate-spin size-10 text-purple-600" />
+              <Loader2 className="animate-spin size-10 text-primary" />
             </div>
           ) : expenses.length > 0 ? (
-            <ul className="space-y-3">
-              {expenses.map((expense) => (
-                <li key={expense.id}>
-                  <Card className="border border-gray-100 shadow-sm rounded-xl">
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center shrink-0">
-                            <Wallet size={18} className="text-gray-500" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h4 className="text-sm font-semibold text-gray-900 truncate">{expense.title}</h4>
-                            <div className="flex items-center gap-2 mt-0.5">
-                              <p className="text-xs text-gray-400">{formatDate(expense.date)}</p>
-                              {expense.category && (
-                                <Badge className={`text-xs px-2 py-0 rounded-full font-medium border-0 ${getCategoryColor(expense.category)}`}>
-                                  {expense.category}
-                                </Badge>
+            <ul className="flex flex-col gap-3">
+              {expenses.map((expense) => {
+                const iconBg = CATEGORY_ICON_BG[expense.category] ?? CATEGORY_ICON_BG.Other;
+                return (
+                  <li key={expense.id}>
+                    <Card className="border border-border shadow-sm rounded-2xl bg-card">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <div
+                              className={`size-11 rounded-xl flex items-center justify-center shrink-0 ${iconBg}`}
+                            >
+                              {CATEGORY_ICONS[expense.category] ?? (
+                                <HelpCircle size={16} />
                               )}
                             </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="text-sm font-semibold text-foreground truncate">
+                                {expense.title}
+                              </h4>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <p className="text-xs text-muted-foreground">
+                                  {formatDate(expense.date)}
+                                </p>
+                                {expense.category && (
+                                  <Badge
+                                    className={`text-[10px] px-2 py-0 rounded-full font-medium border ${
+                                      CATEGORY_COLORS[expense.category] ??
+                                      CATEGORY_COLORS.Other
+                                    }`}
+                                  >
+                                    {expense.category}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
                           </div>
+                          <span
+                            className={`text-sm font-bold shrink-0 ml-2 ${
+                              expense.amount < 0 ? "text-red-500" : "text-green-600"
+                            }`}
+                          >
+                            {expense.amount < 0
+                              ? `- ${Math.abs(expense.amount)}`
+                              : expense.amount}{" "}
+                            {currency}
+                          </span>
                         </div>
-                        <span className={`text-sm font-bold shrink-0 ml-2 ${expense.amount < 0 ? "text-red-500" : "text-green-600"}`}>
-                          {expense.amount < 0 ? `- ${Math.abs(expense.amount)}` : `+ ${expense.amount}`} {currency}
-                        </span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </li>
-              ))}
+                      </CardContent>
+                    </Card>
+                  </li>
+                );
+              })}
             </ul>
           ) : (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mb-4">
-                <History size={28} className="text-gray-400" />
+              <div className="size-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-4">
+                <CalendarDays size={28} className="text-primary" />
               </div>
-              <h4 className="text-base font-semibold text-gray-700 mb-1">No history found</h4>
-              <p className="text-sm text-gray-400">No expenses recorded for last month.</p>
+              <h4 className="text-base font-semibold text-foreground mb-1">
+                No history found
+              </h4>
+              <p className="text-sm text-muted-foreground">
+                No expenses recorded for last month.
+              </p>
             </div>
           )}
         </div>

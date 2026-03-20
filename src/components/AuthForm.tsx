@@ -1,21 +1,22 @@
 "use client";
-import { Loader2 } from 'lucide-react';
-import Link from 'next/link';
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Eye, EyeOff, Loader2 } from "lucide-react";
+import Link from "next/link";
+import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 type PropsTypes = {
-  signup?: boolean,
-  loading: boolean,
+  signup?: boolean;
+  loading: boolean;
   func: (email: string, password: string) => void;
-}
+};
 
 const AuthForm = ({ signup, func, loading }: PropsTypes) => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
@@ -23,70 +24,86 @@ const AuthForm = ({ signup, func, loading }: PropsTypes) => {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-50 p-5">
-      <Card className="w-full max-w-md shadow-lg border border-gray-100 rounded-2xl">
-        <CardHeader className="text-center pb-2 pt-8">
-          <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-purple-600 text-xl font-bold">E</span>
+    <div className="flex justify-center items-center min-h-screen bg-gradient-to-b from-primary/8 via-background to-background p-5">
+      <Card className="w-full max-w-md border-0 shadow-xl shadow-purple-100/60 rounded-3xl">
+        <CardHeader className="text-center pb-0 pt-8 px-8">
+          <div className="size-14 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg shadow-primary/30">
+            <span className="text-primary-foreground text-2xl font-black">E</span>
           </div>
-          <CardTitle className="text-2xl font-bold text-gray-900">
+          <h1 className="text-2xl font-bold text-foreground">
             {signup ? "Create Account" : "Welcome Back"}
-          </CardTitle>
-          <p className="text-sm text-gray-500 mt-1">
-            {signup ? "Sign up to start tracking expenses" : "Sign in to your account"}
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1.5">
+            {signup ? "Start your financial journey today" : "Sign in to your account"}
           </p>
         </CardHeader>
-        <CardContent className="px-8 pb-8 pt-4">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-sm font-medium text-gray-700">Email</Label>
+
+        <CardContent className="px-8 pb-8 pt-6">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="email">Email</Label>
               <Input
                 type="email"
                 id="email"
-                name="email"
-                placeholder="xyz@gmail.com"
+                placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="h-11 border-gray-200 focus:border-purple-400 focus:ring-purple-400 rounded-lg"
+                className="h-11 rounded-xl"
                 required
               />
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="password" className="text-sm font-medium text-gray-700">Password</Label>
-              <Input
-                type="password"
-                id="password"
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="h-11 border-gray-200 focus:border-purple-400 focus:ring-purple-400 rounded-lg"
-                required
-              />
-              {!signup && (
-                <Link href="/resetPassword" className="text-sm text-purple-600 hover:text-purple-700 block mt-1">
-                  Forgot Password?
-                </Link>
-              )}
+
+            <div className="flex flex-col gap-1.5">
+              <div className="flex justify-between items-center">
+                <Label htmlFor="password">Password</Label>
+                {!signup && (
+                  <Link href="/resetPassword" className="text-xs text-primary hover:underline">
+                    Forgot Password?
+                  </Link>
+                )}
+              </div>
+              <div className="relative">
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  id="password"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="h-11 rounded-xl pr-10"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
             </div>
 
             <Button
               type="submit"
               disabled={loading}
-              className="w-full h-11 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-all duration-200 mt-2"
+              size="lg"
+              className="w-full rounded-xl mt-1 font-semibold shadow-md shadow-primary/20"
             >
-              {loading
-                ? <Loader2 className="animate-spin size-5 mx-auto" />
-                : signup ? "Create Account" : "Sign In"
-              }
+              {loading ? (
+                <Loader2 className="animate-spin size-5" />
+              ) : signup ? (
+                "Create Account"
+              ) : (
+                "Sign In"
+              )}
             </Button>
 
-            <p className="text-center text-sm text-gray-500 pt-2">
+            <p className="text-center text-sm text-muted-foreground">
               {signup ? "Already have an account? " : "Don't have an account? "}
               <Link
                 href={signup ? "/login" : "/signup"}
-                className="text-purple-600 hover:text-purple-700 font-medium"
+                className="text-primary font-semibold hover:underline"
               >
-                {signup ? "Sign In" : "Create Account"}
+                {signup ? "Sign In" : "Sign Up"}
               </Link>
             </p>
           </form>

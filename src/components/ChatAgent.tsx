@@ -2,7 +2,9 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useAuthStore } from "@/store/authStore";
-import { MessageSquare, X, Send, Loader2, Bot } from "lucide-react";
+import { MessageSquare, X, Send, Loader2, Bot, Sparkles } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 type Message = {
   role: "user" | "assistant";
@@ -18,34 +20,48 @@ const INITIAL_MESSAGE: Message = {
 function MessageBubble({ msg }: { msg: Message }) {
   const isUser = msg.role === "user";
 
-  // Render simple markdown-like formatting
-  const formatted = msg.content
-    .split("\n")
-    .map((line, i) => {
-      const bold = line.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
-      return (
-        <span key={i}>
-          <span dangerouslySetInnerHTML={{ __html: bold }} />
-          {i < msg.content.split("\n").length - 1 && <br />}
-        </span>
-      );
-    });
+  const formatted = msg.content.split("\n").map((line, i, arr) => {
+    const bold = line.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+    return (
+      <span key={i}>
+        <span dangerouslySetInnerHTML={{ __html: bold }} />
+        {i < arr.length - 1 && <br />}
+      </span>
+    );
+  });
+
+  if (isUser) {
+    return (
+      <div className="flex justify-end">
+        <div className="max-w-[78%] bg-primary text-primary-foreground rounded-2xl rounded-br-sm px-3.5 py-2.5 text-sm leading-relaxed shadow-sm">
+          {formatted}
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
-      {!isUser && (
-        <div className="flex-shrink-0 w-7 h-7 rounded-full bg-primary flex items-center justify-center mr-2 mt-1">
-          <Bot size={14} className="text-primary-content" />
-        </div>
-      )}
-      <div
-        className={`max-w-[78%] rounded-2xl px-3 py-2 text-sm leading-relaxed ${
-          isUser
-            ? "bg-primary text-primary-content rounded-br-none"
-            : "bg-base-200 text-base-content rounded-bl-none"
-        }`}
-      >
+    <div className="flex justify-start gap-2">
+      <div className="size-7 bg-primary/10 rounded-full flex items-center justify-center shrink-0 mt-1">
+        <Bot size={13} className="text-primary" />
+      </div>
+      <div className="max-w-[78%] bg-muted text-foreground rounded-2xl rounded-bl-sm px-3.5 py-2.5 text-sm leading-relaxed">
         {formatted}
+      </div>
+    </div>
+  );
+}
+
+function TypingIndicator() {
+  return (
+    <div className="flex justify-start gap-2">
+      <div className="size-7 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
+        <Bot size={13} className="text-primary" />
+      </div>
+      <div className="bg-muted rounded-2xl rounded-bl-sm px-4 py-3 flex items-center gap-1.5">
+        <span className="size-1.5 bg-muted-foreground/60 rounded-full animate-bounce [animation-delay:-0.3s]" />
+        <span className="size-1.5 bg-muted-foreground/60 rounded-full animate-bounce [animation-delay:-0.15s]" />
+        <span className="size-1.5 bg-muted-foreground/60 rounded-full animate-bounce" />
       </div>
     </div>
   );
@@ -69,7 +85,7 @@ export default function ChatAgent() {
   useEffect(() => {
     if (isOpen) {
       setHasNewMessage(false);
-      setTimeout(() => inputRef.current?.focus(), 100);
+      setTimeout(() => inputRef.current?.focus(), 150);
     }
   }, [isOpen]);
 
@@ -94,20 +110,16 @@ export default function ChatAgent() {
 
       const data = await res.json();
       const reply = data.reply || data.error || "Something went wrong.";
-
       setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
-
       if (!isOpen) setHasNewMessage(true);
     } catch {
       setMessages((prev) => [
         ...prev,
-        {
-          role: "assistant",
-          content: "Sorry, I encountered an error. Please try again.",
-        },
+        { role: "assistant", content: "Sorry, I encountered an error. Please try again." },
       ]);
     } finally {
       setLoading(false);
+      inputRef.current?.focus();
     }
   }, [input, loading, user, messages, isOpen]);
 
@@ -121,79 +133,80 @@ export default function ChatAgent() {
   if (!user) return null;
 
   return (
-    <div className="fixed bottom-20 right-4 z-50 flex flex-col items-end gap-3">
+    <div className="fixed bottom-12 right-4 z-50 flex flex-col items-end gap-3">
       {/* Chat Panel */}
       {isOpen && (
-        <div className="w-80 sm:w-96 bg-base-100 border border-base-300 rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 duration-200"
-          style={{ height: "480px" }}>
+        <div
+          className="w-80 sm:w-96 bg-card/98 backdrop-blur-xl border border-border rounded-3xl shadow-2xl shadow-black/15 dark:shadow-black/50 flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-200"
+          style={{ height: "480px" }}
+        >
           {/* Header */}
-          <div className="bg-primary text-primary-content px-4 py-3 flex items-center justify-between flex-shrink-0">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-full bg-primary-content/20 flex items-center justify-center">
-                <Bot size={16} className="text-primary-content" />
+          <div className="bg-gradient-to-r from-primary to-purple-700 px-4 py-3 flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-2.5">
+              <div className="size-9 bg-white/20 rounded-xl flex items-center justify-center">
+                <Sparkles size={16} className="text-primary-foreground" />
               </div>
               <div>
-                <p className="font-semibold text-sm leading-tight">Expense Assistant</p>
-                <p className="text-xs text-primary-content/70 leading-tight">
-                  {loading ? "Thinking..." : "Online"}
+                <p className="font-semibold text-sm text-primary-foreground leading-tight">
+                  Expense Assistant
                 </p>
+                <div className="flex items-center gap-1 mt-0.5">
+                  <span
+                    className={`size-1.5 rounded-full ${
+                      loading ? "bg-yellow-300 animate-pulse" : "bg-green-400"
+                    }`}
+                  />
+                  <p className="text-xs text-primary-foreground/75">
+                    {loading ? "Thinking…" : "Online"}
+                  </p>
+                </div>
               </div>
             </div>
             <button
               onClick={() => setIsOpen(false)}
-              className="btn btn-ghost btn-xs btn-circle text-primary-content hover:bg-primary-content/20"
+              aria-label="Close chat"
+              className="size-8 rounded-xl bg-white/10 hover:bg-white/25 flex items-center justify-center transition-colors duration-150"
             >
-              <X size={16} />
+              <X size={16} className="text-primary-foreground" />
             </button>
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-3 space-y-3 scroll-smooth">
+          <div className="flex-1 overflow-y-auto px-3 py-3 flex flex-col gap-3 scroll-smooth">
             {messages.map((msg, i) => (
               <MessageBubble key={i} msg={msg} />
             ))}
-
-            {loading && (
-              <div className="flex justify-start">
-                <div className="flex-shrink-0 w-7 h-7 rounded-full bg-primary flex items-center justify-center mr-2">
-                  <Bot size={14} className="text-primary-content" />
-                </div>
-                <div className="bg-base-200 rounded-2xl rounded-bl-none px-4 py-3 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 bg-base-content/40 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                  <span className="w-1.5 h-1.5 bg-base-content/40 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                  <span className="w-1.5 h-1.5 bg-base-content/40 rounded-full animate-bounce" />
-                </div>
-              </div>
-            )}
+            {loading && <TypingIndicator />}
             <div ref={bottomRef} />
           </div>
 
           {/* Input */}
-          <div className="p-3 border-t border-base-300 flex-shrink-0">
+          <div className="px-3 pb-3 pt-2 border-t border-border shrink-0">
             <div className="flex gap-2">
-              <input
+              <Input
                 ref={inputRef}
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Type a message..."
-                className="input input-bordered input-sm flex-1 text-sm"
+                placeholder="Type a message…"
+                className="flex-1 h-10 rounded-xl text-sm"
                 disabled={loading}
                 maxLength={500}
               />
-              <button
+              <Button
                 onClick={sendMessage}
                 disabled={loading || !input.trim()}
-                className="btn btn-primary btn-sm btn-square"
-                title="Send"
+                size="sm"
+                className="size-10 p-0 rounded-xl shrink-0"
+                aria-label="Send message"
               >
                 {loading ? (
-                  <Loader2 size={14} className="animate-spin" />
+                  <Loader2 size={15} className="animate-spin" />
                 ) : (
-                  <Send size={14} />
+                  <Send size={15} />
                 )}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -202,18 +215,16 @@ export default function ChatAgent() {
       {/* Toggle Button */}
       <button
         onClick={() => setIsOpen((prev) => !prev)}
-        className="btn btn-primary btn-circle w-14 h-14 shadow-lg relative"
-        title="Expense Assistant"
+        aria-label={isOpen ? "Close expense assistant" : "Open expense assistant"}
+        className="relative size-14 bg-primary hover:bg-primary/90 rounded-2xl shadow-xl shadow-primary/40 flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95"
       >
         {isOpen ? (
-          <X size={22} />
+          <X size={22} className="text-primary-foreground" />
         ) : (
-          <>
-            <MessageSquare size={22} />
-            {hasNewMessage && (
-              <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-error rounded-full border-2 border-base-100" />
-            )}
-          </>
+          <MessageSquare size={22} className="text-primary-foreground" />
+        )}
+        {hasNewMessage && !isOpen && (
+          <span className="absolute -top-1 -right-1 size-3.5 bg-red-500 rounded-full border-2 border-background animate-pulse" />
         )}
       </button>
     </div>

@@ -10,7 +10,7 @@ const geminiClient = new OpenAI({
   baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
 });
 
-const geminiModel = new OpenAIChatCompletionsModel(geminiClient, "gemini-2.5-flash");
+const geminiModel = new OpenAIChatCompletionsModel(geminiClient, "gemini-2.5-flash-lite");
 
 const runner = new Runner({
   modelProvider: geminiClient as never,
@@ -225,35 +225,11 @@ export async function POST(req: NextRequest) {
     const agent = new Agent({
       name: "Expense Assistant",
       model: geminiModel,
-      instructions: `You are a helpful expense tracking assistant embedded in an expense tracker app.
-Today's date is ${today}. Use this as the default date when none is specified.
-
-You can help users:
-- List/view their current month expenses
-- Add new expenses
-- Update existing expenses — use the expense name/title the user provides, DO NOT ask for an ID
-- Delete expenses — use the expense name/title the user provides, DO NOT ask for an ID
-- Check income summary — total income, total spent this month, and remaining balance
-
-Available categories: Food, Transport, Bills, Education, Investments, Luxuries, Other.
-
-IMPORTANT rules:
-- When updating or deleting, pass the expense name/title directly as "titleOrId" — the tool will find the correct expense automatically.
-- NEVER ask the user for an expense ID. Always use the name they mentioned.
-- If no date is given, use today (${today}).
-- Be concise, friendly, and confirm every action clearly.
-- When listing, format each expense as: title — amount (category) on date.
-
-Category auto-detection — NEVER ask the user for a category, always infer it yourself:
-- Food: restaurants, fast food, groceries, cafe, burger, pizza, biryani, chai, lunch, dinner, breakfast, shawarma, zinger, mcdonalds, kfc, eat, drink, snack, fruit, vegetable
-- Transport: uber, careem, taxi, fuel, petrol, bus, rickshaw, metro, parking, car, bike, ride
-- Bills: electricity, gas, water, internet, phone, rent, wifi, broadband, utility, mobile bill, recharge
-- Education: books, course, school, university, college, fee, tuition, stationery, copy, pen
-- Investments: stocks, crypto, mutual fund, saving, investment, shares, gold
-- Luxuries: netflix, spotify, amazon, shopping, clothes, shoes, game, cinema, movie, salon, gym, perfume, watch, gift, entertainment, subscription
-- Other: anything that doesn't clearly fit above
-
-Use context clues from the title to pick the best category automatically.`,
+      instructions: `Expense assistant. Today: ${today}. Default date = today.
+Tools: list, add, update, delete expenses; get income summary.
+Rules: never ask for ID (use title to find); infer category from title; be concise.
+Categories: Food(eat/drink/restaurant/burger/pizza/biryani/chai/kfc), Transport(uber/careem/fuel/petrol/bus/rickshaw), Bills(electricity/gas/rent/internet/phone), Education(books/course/fee/tuition), Investments(stocks/crypto/gold/saving), Luxuries(netflix/shopping/clothes/cinema/gym/salon), Other.
+List format: title — amount (category) on date.`,
       tools: createAgentTools(userId),
     });
 
@@ -264,10 +240,32 @@ Use context clues from the title to pick the best category automatically.`,
         ? recentHistory.map((m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.content}`).join("\n") + "\nUser: " + message
         : message;
 
-    const result = await runner.run(agent, historyText);
-    return NextResponse.json({ reply: result.finalOutput });
+    // Retry up to 3 times on 429 rate limit
+    let result;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        result = await runner.run(agent, historyText);
+        break;
+      } catch (err: unknown) {
+        const status = (err as { status?: number })?.status;
+        if (status === 429 && attempt < 3) {
+          await new Promise((r) => setTimeout(r, attempt * 2000)); // 2s, 4s
+          continue;
+        }
+        throw err;
+      }
+    }
+
+    return NextResponse.json({ reply: result!.finalOutput });
   } catch (err) {
     console.error("[chat/route]", err);
+    const status = (err as { status?: number })?.status;
+    if (status === 429) {
+      return NextResponse.json(
+        { error: "Rate limit reached. Please wait a moment and try again." },
+        { status: 429 }
+      );
+    }
     return NextResponse.json(
       { error: "Something went wrong. Please try again." },
       { status: 500 }
