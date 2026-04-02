@@ -117,7 +117,7 @@ export default function ChatAgent() {
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
-    recognition.lang = "ur-PK";       // Urdu first — falls back to whatever user speaks
+    recognition.lang = "en-US";
     recognition.interimResults = false;
     recognition.continuous = false;
 
