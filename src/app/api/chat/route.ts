@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Agent, Runner, OpenAIChatCompletionsModel, tool } from "@openai/agents";
 import { z } from "zod";
 import OpenAI from "openai";
-import { adminDb } from "@/firebase/firebaseAdmin";
+import { adminDb, adminAuth } from "@/firebase/firebaseAdmin";
 
 // Gemini via OpenAI-compatible API
 const geminiClient = new OpenAI({
@@ -230,9 +230,17 @@ function createAgentTools(userId: string) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { message, history, userId } = await req.json();
+    const { message, history, token } = await req.json();
 
-    if (!userId || typeof userId !== "string") {
+    if (!token || typeof token !== "string") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    let userId: string;
+    try {
+      const decoded = await adminAuth.verifyIdToken(token);
+      userId = decoded.uid;
+    } catch {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

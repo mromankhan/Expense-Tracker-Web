@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useAuthStore } from "@/store/authStore";
+import { auth } from "@/firebase/firebaseConfig";
 import { MessageSquare, X, Send, Loader2, Bot, Sparkles } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -98,13 +99,16 @@ export default function ChatAgent() {
     setLoading(true);
 
     try {
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) throw new Error("Not authenticated");
+
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: userMessage,
           history: messages.slice(-8),
-          userId: user.uid,
+          token,
         }),
       });
 
