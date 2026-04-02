@@ -2,9 +2,31 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useAuthStore } from "@/store/authStore";
-import { MessageSquare, X, Send, Loader2, Bot, Sparkles } from "lucide-react";
+import { auth } from "@/firebase/firebaseConfig";
+import { MessageSquare, X, Send, Loader2, Bot, Sparkles, Mic, MicOff } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+
+// Web Speech API types
+type SpeechRecognitionEvent = Event & {
+  results: { [key: number]: { [key: number]: { transcript: string } } };
+};
+type SpeechRecognitionInstance = EventTarget & {
+  lang: string;
+  interimResults: boolean;
+  continuous: boolean;
+  start: () => void;
+  stop: () => void;
+  onresult: ((e: SpeechRecognitionEvent) => void) | null;
+  onerror: ((e: Event) => void) | null;
+  onend: (() => void) | null;
+};
+declare global {
+  interface Window {
+    SpeechRecognition: new () => SpeechRecognitionInstance;
+    webkitSpeechRecognition: new () => SpeechRecognitionInstance;
+  }
+}
 
 type Message = {
   role: "user" | "assistant";
@@ -75,8 +97,42 @@ export default function ChatAgent() {
   const [loading, setLoading] = useState(false);
   const [hasNewMessage, setHasNewMessage] = useState(false);
 
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
+
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const isSpeechSupported =
+    typeof window !== "undefined" &&
+    !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+
+  const toggleVoice = useCallback(() => {
+    if (!isSpeechSupported) return;
+
+    if (isListening) {
+      recognitionRef.current?.stop();
+      return;
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-US";
+    recognition.interimResults = false;
+    recognition.continuous = false;
+
+    recognition.onresult = (e: SpeechRecognitionEvent) => {
+      const transcript = e.results[0][0].transcript;
+      setInput((prev) => (prev ? prev + " " + transcript : transcript));
+    };
+
+    recognition.onerror = () => setIsListening(false);
+    recognition.onend = () => setIsListening(false);
+
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsListening(true);
+  }, [isListening, isSpeechSupported]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -98,13 +154,16 @@ export default function ChatAgent() {
     setLoading(true);
 
     try {
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) throw new Error("Not authenticated");
+
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: userMessage,
           history: messages.slice(-8),
-          userId: user.uid,
+          token,
         }),
       });
 
@@ -182,6 +241,11 @@ export default function ChatAgent() {
 
           {/* Input */}
           <div className="px-3 pb-3 pt-2 border-t border-border shrink-0">
+            {isListening && (
+              <p className="text-xs text-primary text-center mb-1.5 animate-pulse">
+                Listening… speak now
+              </p>
+            )}
             <div className="flex gap-2">
               <Input
                 ref={inputRef}
@@ -189,11 +253,27 @@ export default function ChatAgent() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Type a message…"
+                placeholder={isListening ? "Listening…" : "Type or speak a message…"}
                 className="flex-1 h-10 rounded-xl text-sm"
                 disabled={loading}
                 maxLength={500}
               />
+              {isSpeechSupported && (
+                <Button
+                  onClick={toggleVoice}
+                  disabled={loading}
+                  size="sm"
+                  variant="outline"
+                  className={`size-10 p-0 rounded-xl shrink-0 transition-colors ${
+                    isListening
+                      ? "bg-red-500 hover:bg-red-600 border-red-500 text-white"
+                      : "border-border"
+                  }`}
+                  aria-label={isListening ? "Stop listening" : "Start voice input"}
+                >
+                  {isListening ? <MicOff size={15} /> : <Mic size={15} />}
+                </Button>
+              )}
               <Button
                 onClick={sendMessage}
                 disabled={loading || !input.trim()}

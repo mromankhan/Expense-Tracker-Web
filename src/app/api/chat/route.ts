@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Agent, Runner, OpenAIChatCompletionsModel, tool } from "@openai/agents";
 import { z } from "zod";
 import OpenAI from "openai";
-import { adminDb } from "@/firebase/firebaseAdmin";
+import { adminDb, adminAuth } from "@/firebase/firebaseAdmin";
 
 // Gemini via OpenAI-compatible API
 const geminiClient = new OpenAI({
@@ -181,6 +181,22 @@ function createAgentTools(userId: string) {
     }),
 
     tool({
+      name: "set_income",
+      description:
+        "Set or update the user's monthly income. Use when the user says 'set income', 'update income', 'meri income X hai', 'income change karo', etc.",
+      parameters: z.object({
+        amount: z.number().positive().describe("The new monthly income amount"),
+      }),
+      execute: async ({ amount }) => {
+        await adminDb.collection("users").doc(userId).set(
+          { totalIncome: amount },
+          { merge: true }
+        );
+        return `Monthly income updated to ${amount} successfully.`;
+      },
+    }),
+
+    tool({
       name: "get_income_summary",
       description:
         "Get the user's total income, total spent this month, and remaining balance. Use when the user asks about income, balance, remaining money, kitna bacha, or how much they've spent.",
@@ -214,9 +230,17 @@ function createAgentTools(userId: string) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { message, history, userId } = await req.json();
+    const { message, history, token } = await req.json();
 
-    if (!userId || typeof userId !== "string") {
+    if (!token || typeof token !== "string") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    let userId: string;
+    try {
+      const decoded = await adminAuth.verifyIdToken(token);
+      userId = decoded.uid;
+    } catch {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -226,7 +250,7 @@ export async function POST(req: NextRequest) {
       name: "Expense Assistant",
       model: geminiModel,
       instructions: `Expense assistant. Today: ${today}. Default date = today.
-Tools: list, add, update, delete expenses; get income summary.
+Tools: list, add, update, delete expenses; set income; get income summary.
 Rules: never ask for ID (use title to find); infer category from title; be concise.
 Categories: Food(eat/drink/restaurant/burger/pizza/biryani/chai/kfc), Transport(uber/careem/fuel/petrol/bus/rickshaw), Bills(electricity/gas/rent/internet/phone), Education(books/course/fee/tuition), Investments(stocks/crypto/gold/saving), Luxuries(netflix/shopping/clothes/cinema/gym/salon), Other.
 List format: title — amount (category) on date.`,
@@ -244,7 +268,7 @@ List format: title — amount (category) on date.`,
     let result;
     for (let attempt = 1; attempt <= 3; attempt++) {
       try {
-        result = await runner.run(agent, historyText);
+        result = await runner.run(agent, historyText, { maxTurns: 25 });
         break;
       } catch (err: unknown) {
         const status = (err as { status?: number })?.status;

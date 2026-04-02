@@ -1,0 +1,66 @@
+# LinkedIn Project Name Options (AI-Focused)
+
+1. **SpendWise – AI-Powered Personal Finance Assistant**
+2. **Intelligent Expense Tracker with Conversational AI**
+3. **AI-Driven Smart Expense Management System**
+4. **SpendWise: Conversational AI for Personal Finance**
+
+---
+
+# LinkedIn Project Description (Professional & AI-Highlighted)
+
+## 🎯 SpendWise – AI-Powered Personal Finance Assistant
+
+Built an intelligent expense tracking application featuring a conversational AI agent that understands natural language commands to manage personal finances effortlessly.
+
+### 🤖 AI Integration Highlights:
+- Conversational AI Agent powered by Gemini 2.5 Flash Lite
+- Natural Language Processing for expense commands (e.g., "Add coffee 150 PKR in Food category")
+- AI-driven expense categorization & insights
+- Real-time intent recognition for CRUD operations
+- Context-aware responses with structured data extraction
+- OpenAI-compatible API integration for seamless LLM interaction
+
+### ✨ Core Features:
+- 🔐 Firebase Authentication with Protected Routes
+- 💰 Real-time Expense & Income Management
+- 📊 Interactive Analytics Dashboard (Chart.js)
+- 🗣️ AI Chatbot for Voice/Text Commands
+- 🌙 Dark/Light Theme with shadcn/ui Components
+- 📱 Fully Responsive Design
+- 🌍 Multi-Currency Support
+
+### 🛠️ Tech Stack:
+- **Frontend:** Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS, shadcn/ui
+- **Backend:** Firebase (Auth, Firestore, Admin SDK), Next.js API Routes
+- **AI/ML:** Gemini 2.5 Flash Lite, OpenAI Agents SDK, Zod Schema Validation
+- **State Management:** Zustand
+- **Visualization:** Chart.js, React-Chartjs-2
+- **Deployment:** Vercel
+
+### 🔗 Live Demo: https://expenses-tracker.vercel.app
+
+### 📌 Hashtags:
+#NextJS #React #TypeScript #Firebase #AIIntegration #GeminiAI #LLM #ConversationalAI #FullStackDevelopment #WebDevelopment
+
+---
+
+# Short Version (For Featured Section)
+
+## 🤖 SpendWise | AI-Powered Expense Tracker
+
+Built an intelligent finance app with conversational AI (Gemini 2.5) that understands natural language commands to add, view, update & delete expenses in real-time.
+
+**Tech:** Next.js 16 • TypeScript • Firebase • Gemini AI • Zustand • Chart.js
+
+🔗 https://expenses-tracker.vercel.app
+
+---
+
+# 💡 Pro Tips for LinkedIn:
+
+1. **Add Project to Featured Section** – Include a screenshot of the AI chatbot interface
+2. **Pin the Post** – Create a post about this project and pin it to your profile
+3. **Add Skills** – Tag skills: React, Next.js, Firebase, Artificial Intelligence, TypeScript
+4. **Media Attachment** – Add a short demo video/GIF showing AI commands in action
+5. **Engagement** – Share your learning journey in the post description
